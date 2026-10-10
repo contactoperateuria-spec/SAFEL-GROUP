@@ -1,0 +1,261 @@
+@import "tailwindcss";
+
+:root {
+  --orange: #E8720C;
+  --orange-light: #FFF0E6;
+  --orange-dark: #C05E08;
+  --text: #1A1A1A;
+  --text-2: #4A4A4A;
+  --text-3: #7A7A7A;
+  --bg: #F8F7F5;
+  --white: #FFFFFF;
+  --border: #E2E0DC;
+  --border-2: #CCC9C4;
+  --green: #1A7A45;
+  --green-bg: #E8F5EE;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--bg);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+ul { list-style: none; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+.section { padding: 56px 0; }
+.section-title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.section-sub { font-size: 15px; color: var(--text-2); margin-bottom: 32px; }
+
+/* BUTTONS */
+.btn-primary {
+  background: var(--orange);
+  color: #fff;
+  padding: 0 16px;
+  height: 38px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--orange-dark); }
+
+.btn-outline {
+  border: 1.5px solid var(--border-2);
+  color: var(--text-2);
+  padding: 0 14px;
+  height: 38px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color .15s, background .15s;
+  background: none;
+  cursor: pointer;
+}
+.btn-outline:hover { border-color: var(--orange); color: var(--orange); }
+
+.btn-cta {
+  width: 100%;
+  height: 48px;
+  background: var(--orange);
+  color: #fff;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background .15s;
+  border: none;
+}
+.btn-cta:hover { background: var(--orange-dark); }
+.btn-cta:disabled { opacity: .5; cursor: not-allowed; }
+
+/* PRODUCT GRID */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.product-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow .15s;
+}
+.product-card:hover { box-shadow: var(--shadow); }
+
+.product-img {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  background: var(--bg);
+}
+
+.product-body { padding: 12px; }
+.product-card-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; line-height: 1.4; }
+.product-card-price { font-size: 16px; font-weight: 700; color: var(--orange); }
+.product-card-moq { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+.product-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.badge-new { background: #E8F0FE; color: #1A56DB; }
+.badge-hot { background: #FEF3E8; color: var(--orange-dark); }
+.badge-ending { background: #FEE8E8; color: #C62828; }
+
+/* CATS GRID */
+.cats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.cat-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.cat-item:hover { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }
+.cat-emoji { font-size: 28px; margin-bottom: 8px; }
+.cat-name { font-size: 12px; font-weight: 500; color: var(--text-2); line-height: 1.3; }
+
+/* BADGE COUNT */
+.badge-count {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 16px; height: 16px;
+  background: var(--orange);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* PROMISE ITEM */
+.promise-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.promise-icon {
+  width: 24px; height: 24px;
+  background: var(--green-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--green);
+}
+
+/* STEPS */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.step-item { text-align: center; padding: 24px 16px; }
+.step-num {
+  width: 44px; height: 44px;
+  background: var(--orange);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 auto 16px;
+}
+.step-icon { font-size: 28px; margin-bottom: 10px; }
+.step-label { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.step-desc { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+
+/* HERO PILL */
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange-light);
+  color: var(--orange-dark);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+/* FOOTER */
+.footer-links li { margin-bottom: 8px; }
+.footer-links a { font-size: 13px; color: rgba(255,255,255,.6); transition: color .15s; }
+.footer-links a:hover { color: var(--orange); }
+
+.whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #25D366;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .15s;
+}
+.whatsapp-btn:hover { background: #1DA851; }
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+}
