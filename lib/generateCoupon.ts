@@ -11,7 +11,7 @@ interface CouponData {
   date: string
 }
 
-function fmt(n: number) { return n.toLocaleString('fr-FR') + ' FCFA' }
+function fmt(n: number) { return n.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/ /g, ' ') + ' FCFA' }
 
 export async function generateCouponPDF(data: CouponData): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
