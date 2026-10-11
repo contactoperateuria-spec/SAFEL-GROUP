@@ -61,7 +61,7 @@ export default function AdminShell() {
           Admin
         </div>
         {MENU.map(item => (
-          <button key={item.key} onClick={() => setActive(item.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', fontSize: 13, color: active === item.key ? '#fff' : 'rgba(255,255,255,.55)', cursor: 'pointer', background: active === item.key ? 'rgba(255,255,255,.06)' : 'none', borderRight: active === item.key ? '2px solid var(--orange)' : '2px solid transparent', border: 'none', width: '100%', textAlign: 'left', transition: 'background .12s, color .12s' }}>
+          <button key={item.key} onClick={() => setActive(item.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', fontSize: 13, color: active === item.key ? '#fff' : 'rgba(255,255,255,.55)', cursor: 'pointer', background: active === item.key ? 'rgba(255,255,255,.06)' : 'none', borderTop: 'none', borderBottom: 'none', borderLeft: 'none', borderRight: active === item.key ? '2px solid var(--orange)' : '2px solid transparent', width: '100%', textAlign: 'left', transition: 'background .12s, color .12s' }}>
             <span style={{ fontSize: 16, width: 18, textAlign: 'center' }}>{item.icon}</span>
             {item.label}
           </button>
