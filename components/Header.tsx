@@ -1,9 +1,12 @@
 'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useCartStore } from '@/lib/store'
 
 export default function Header() {
   const count = useCartStore(s => s.count())
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
   return (
     <header style={{
       background: 'var(--white)',
@@ -54,7 +57,7 @@ export default function Header() {
               <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
             </svg>
-            {count > 0 && (
+            {mounted && count > 0 && (
               <span style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%', background: 'var(--orange)', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count > 9 ? '9+' : count}</span>
             )}
           </Link>
