@@ -85,7 +85,7 @@ export default function CouponPage() {
   const waMessage = encodeURIComponent(
     `Bonjour SAFEL GROUP,\n\nJe vous envoie ma preuve de paiement pour la commande ${displayRef}.\n\nMontant : ${fmt(total)} FCFA\nNom : ${displayName}\n\nMerci.`
   )
-  const waUrl = `https://wa.me/22896045369?text=${waMessage}`
+  const waUrl = `https://wa.me/22870626796?text=${waMessage}`
 
   const handleDownloadPDF = async () => {
     setPdfLoading(true)
