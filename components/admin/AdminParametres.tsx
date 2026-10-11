@@ -9,7 +9,7 @@ const PERMS_ALL = ['Commandes', 'Produits', 'Clients', 'Douane', 'Bordereaux', '
 
 export default function AdminParametres() {
   const [shopName, setShopName] = useState('SAFEL GROUP')
-  const [whatsapp, setWhatsapp] = useState('22897838948')
+  const [whatsapp, setWhatsapp] = useState('22870626796')
   const [saved, setSaved] = useState(false)
 
   const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }

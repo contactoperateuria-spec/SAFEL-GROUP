@@ -206,7 +206,7 @@ export default function CouponPage() {
             <div style={{ width: 56, height: 56, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.3 }}>QR<br/>Code</div>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 12 }}>
-            SAFEL GROUP · +228 97 83 89 48 · Lomé, Togo
+            SAFEL GROUP · +228 70 62 67 96 · Lomé, Togo
           </div>
         </div>
 
