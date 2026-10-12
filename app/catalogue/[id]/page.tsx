@@ -53,17 +53,24 @@ function ProductPageInner() {
   const changeQty = (color: string, delta: number) => {
     setColorQtys(prev => {
       const cur = prev[color] ?? 0
-      const next = Math.max(0, Math.min(cur + delta, 99))
+      const next = Math.max(0, Math.min(cur + delta, 9999))
       return { ...prev, [color]: next }
     })
+  }
+
+  const setQty = (color: string, val: string) => {
+    const n = parseInt(val) || 0
+    setColorQtys(prev => ({ ...prev, [color]: Math.max(0, Math.min(n, 9999)) }))
   }
 
   const selections = colors.filter(c => (colorQtys[c] ?? 0) > 0)
 
   const handleAddToCart = () => {
-    const colorSummary = selections.length > 0
+    const hasColors = colors.length > 0
+    const qty = hasColors ? totalQty : (colorQtys._ ?? 1)
+    const colorSummary = hasColors && selections.length > 0
       ? selections.map(c => `${c} ×${colorQtys[c]}`).join(', ')
-      : ''
+      : undefined
     addItem({
       product_id: product.id,
       name: product.name,
@@ -71,9 +78,9 @@ function ProductPageInner() {
       bg: meta.bg,
       image: images[0] ?? undefined,
       price: product.price_cfa,
-      quantity: totalQty || 1,
+      quantity: qty,
       size: selectedSize || undefined,
-      color: colorSummary || undefined,
+      color: colorSummary,
     })
     router.push('/panier')
   }
@@ -158,10 +165,18 @@ function ProductPageInner() {
                   return (
                     <div key={c} style={{ display: 'grid', gridTemplateColumns: '1fr 110px', alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: 13, fontWeight: 500 }}>{c}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                        <button disabled={qty === 0} onClick={() => changeQty(c, -1)} style={{ width: 28, height: 28, border: '1.5px solid var(--border-2)', borderRadius: 6, background: 'var(--white)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: qty === 0 ? 'default' : 'pointer', opacity: qty === 0 ? .35 : 1, color: 'var(--text-2)' }}>−</button>
-                        <span style={{ minWidth: 26, textAlign: 'center', fontSize: 14, fontWeight: 600, color: qty === 0 ? 'var(--text-3)' : 'var(--text)' }}>{qty}</span>
-                        <button onClick={() => changeQty(c, 1)} style={{ width: 28, height: 28, border: '1.5px solid var(--border-2)', borderRadius: 6, background: 'var(--white)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)' }}>+</button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                        <button disabled={qty === 0} onClick={() => changeQty(c, -1)} style={{ width: 28, height: 28, border: '1.5px solid var(--border-2)', borderRadius: 6, background: 'var(--white)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: qty === 0 ? 'default' : 'pointer', opacity: qty === 0 ? .35 : 1, color: 'var(--text-2)', flexShrink: 0 }}>−</button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={9999}
+                          value={qty === 0 ? '' : qty}
+                          placeholder="0"
+                          onChange={e => setQty(c, e.target.value)}
+                          style={{ width: 52, height: 28, border: `1.5px solid ${qty > 0 ? 'var(--orange)' : 'var(--border-2)'}`, borderRadius: 6, textAlign: 'center', fontSize: 13, fontWeight: 700, background: qty > 0 ? 'var(--orange-light)' : 'var(--white)', color: qty > 0 ? 'var(--orange-dark)' : 'var(--text-3)', outline: 'none' }}
+                        />
+                        <button onClick={() => changeQty(c, 1)} style={{ width: 28, height: 28, border: '1.5px solid var(--border-2)', borderRadius: 6, background: 'var(--white)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)', flexShrink: 0 }}>+</button>
                       </div>
                     </div>
                   )
@@ -188,9 +203,16 @@ function ProductPageInner() {
           ) : (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Quantité</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button onClick={() => setColorQtys(p => ({ ...p, _: Math.max(0, (p._ ?? 0) - 1) }))} style={{ width: 36, height: 36, border: '1.5px solid var(--border-2)', borderRadius: 8, background: 'var(--white)', fontSize: 20, cursor: 'pointer', color: 'var(--text-2)' }}>−</button>
-                <span style={{ fontSize: 18, fontWeight: 700, minWidth: 32, textAlign: 'center' }}>{colorQtys._ ?? 1}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button onClick={() => setColorQtys(p => ({ ...p, _: Math.max(1, (p._ ?? 1) - 1) }))} style={{ width: 36, height: 36, border: '1.5px solid var(--border-2)', borderRadius: 8, background: 'var(--white)', fontSize: 20, cursor: 'pointer', color: 'var(--text-2)' }}>−</button>
+                <input
+                  type="number"
+                  min={1}
+                  max={9999}
+                  value={colorQtys._ ?? 1}
+                  onChange={e => setColorQtys(p => ({ ...p, _: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  style={{ width: 64, height: 36, border: '1.5px solid var(--orange)', borderRadius: 8, textAlign: 'center', fontSize: 16, fontWeight: 700, background: 'var(--orange-light)', color: 'var(--orange-dark)', outline: 'none' }}
+                />
                 <button onClick={() => setColorQtys(p => ({ ...p, _: (p._ ?? 1) + 1 }))} style={{ width: 36, height: 36, border: '1.5px solid var(--border-2)', borderRadius: 8, background: 'var(--white)', fontSize: 20, cursor: 'pointer', color: 'var(--text-2)' }}>+</button>
               </div>
             </div>
