@@ -5,33 +5,41 @@ export default function MentionsLegales() {
       <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 32 }}>Dernière mise à jour : octobre 2025</p>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Éditeur du site</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Vendeur</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2 }}>
           <strong>Nom commercial :</strong> SAFEL GROUP<br />
-          <strong>Activité :</strong> Commerce de produits importés depuis la Chine (achat groupé)<br />
-          <strong>Pays d'exercice :</strong> Togo<br />
-          <strong>Contact :</strong> +228 70 62 67 96 (WhatsApp)<br />
+          <strong>Adresse :</strong> Lomé, Togo<br />
+          <strong>Contact :</strong> WhatsApp +228 70 62 67 96<br />
+          <strong>Directeur de la publication :</strong> SAFEL GROUP
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Hébergement</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Hébergement et infrastructure</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Ce site est hébergé par <strong>Vercel Inc.</strong>, 340 Pine Street, Suite 700, San Francisco, CA 94104, États-Unis.
+          <strong>Hébergeur :</strong> Vercel Inc., 340 Pine Street Suite 700, San Francisco, CA 94104, États-Unis.<br />
+          <strong>Base de données :</strong> Supabase (Supabase Inc., San Francisco, États-Unis).
+        </p>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Conception du site</h2>
+        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
+          Site conçu et développé par <strong>A.K. Phylippes / L'Opérateur</strong>.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Propriété intellectuelle</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          L'ensemble des contenus présents sur ce site (textes, images, logos, structure) est la propriété exclusive de SAFEL GROUP. Toute reproduction, distribution ou utilisation sans autorisation préalable est interdite.
+          Le logo, les textes et le design du site appartiennent à SAFEL GROUP. Les photos de produits sont fournies par les fournisseurs et peuvent différer légèrement du produit reçu. Toute reproduction non autorisée est interdite.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>Responsabilité</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          SAFEL GROUP s'efforce de fournir des informations exactes et à jour sur ce site. Cependant, des erreurs ou omissions peuvent survenir. SAFEL GROUP ne saurait être tenu responsable de l'utilisation faite des informations présentes sur ce site.
+          SAFEL GROUP s'efforce de maintenir des informations exactes et à jour. Cependant, les délais et disponibilités peuvent varier. SAFEL GROUP ne saurait être tenu responsable d'erreurs ou omissions sur ce site.
         </p>
       </section>
 

@@ -1,67 +1,73 @@
 export default function PolitiquePrecommande() {
   return (
     <div className="container" style={{ paddingTop: 48, paddingBottom: 64, maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Politique de précommande</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Règles de la précommande</h1>
       <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 32 }}>Dernière mise à jour : octobre 2025</p>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>1. Qu'est-ce qu'une précommande ?</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>1. Comment ça marche</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          SAFEL GROUP organise des cycles d'achat groupé depuis la Chine vers Lomé (Togo). Chaque cycle est une période pendant laquelle vous pouvez passer une commande. Les produits sont ensuite achetés, expédiés et livrés ensemble une fois le cycle fermé.
+          Nous achetons en Chine pour vous, par commandes groupées. Vous choisissez vos articles pendant la période d'ouverture du cycle (en général un mois), puis nous passons la commande groupée à la clôture.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>2. Processus de commande</h2>
-        <ol style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
-          <li>Vous sélectionnez vos produits et passez commande pendant un cycle ouvert.</li>
-          <li>Vous recevez un bon de commande (coupon PDF) par téléchargement.</li>
-          <li>Vous effectuez le paiement par Mobile Money (Flooz / T-Money) ou en espèces.</li>
-          <li>SAFEL GROUP confirme votre commande après réception du paiement.</li>
-          <li>Les marchandises sont expédiées depuis la Chine à la fermeture du cycle.</li>
-          <li>Vous êtes notifié à chaque étape : expédition, arrivée en douane, livraison.</li>
-        </ol>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>2. Paiement en deux temps</h2>
+        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
+          <li><strong>À la commande :</strong> vous payez la totalité du prix des marchandises, par Moov Money ou Mixx by Yas. Votre commande est confirmée dès que nous validons votre paiement.</li>
+          <li><strong>Plus tard :</strong> les frais de douane sont fixés à l'arrivée des marchandises à Lomé. Vous réglez alors ce solde avant le retrait.</li>
+        </ul>
       </section>
 
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>3. Délais</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Les délais de livraison sont estimés à 4 à 8 semaines après la fermeture du cycle, selon les conditions d'expédition et les délais douaniers. SAFEL GROUP s'engage à vous communiquer régulièrement l'avancement de votre commande via WhatsApp.
+          Les délais affichés sont indicatifs. Ils dépendent de l'expédition et de la douane, et peuvent varier. Nous vous informons à chaque étape : achat, expédition, arrivée à Lomé.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>4. Paiement</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>4. Livraison et retrait</h2>
+        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
+          <li>Livraison à Lomé et environs, ou retrait sur place à Lomé, Togo.</li>
+          <li>Hors de cette zone : retrait au lieu du conteneur, avec préavis.</li>
+          <li>Vous êtes prévenu dès que votre colis est prêt.</li>
+        </ul>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>5. Suivi</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Le paiement intégral est requis au moment de la confirmation de commande. Les modes de paiement acceptés sont : Flooz, T-Money, et espèces en main propre. Aucune commande n'est traitée sans paiement confirmé.
+          Chaque commande reçoit un numéro (SG-AAAA-XXXXXX) et, une fois expédiée, un numéro de bordereau consultable sur la page <strong>« Suivre mon colis »</strong>.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>5. Frais de douane</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>6. Annulation, transfert et crédit</h2>
+        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
+          <li>Aucun remboursement après paiement car la commande est transmise au fournisseur.</li>
+          <li>Si SAFEL GROUP annule un produit (indisponibilité fournisseur, douane trop élevée) : remboursement à 100 %, frais de transfert inclus, sous 7 jours ouvrables.</li>
+        </ul>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>7. Produit non conforme ou endommagé</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Des frais de douane peuvent s'appliquer à votre commande lors du passage en douane au Togo. Ces frais sont variables et vous seront communiqués avant la livraison finale. Ils sont à régler par le client avant la remise des marchandises.
+          Signalez-le sous <strong>48 h</strong> après la réception, avec photos, par WhatsApp au <strong>+228 70 62 67 96</strong>. Nous étudions chaque cas avec le fournisseur et vous proposons une solution (remplacement ou remboursement) selon ce qui est possible.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>6. Annulation et remboursement</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>8. Couleurs et tailles</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Une commande peut être annulée uniquement avant la fermeture du cycle. Après fermeture, les achats sont engagés auprès des fournisseurs chinois et aucun remboursement ne peut être accordé, sauf en cas de manquant ou de marchandise non conforme à la commande.
-        </p>
-      </section>
-
-      <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>7. Réclamations</h2>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Toute réclamation concernant un produit manquant ou non conforme doit être signalée à SAFEL GROUP dans les 48 heures suivant la réception, via WhatsApp au <strong>+228 70 62 67 96</strong>. Au-delà de ce délai, aucune réclamation ne pourra être prise en compte.
+          Les photos sont indicatives : de légères différences de couleur ou de finition sont possibles. Vérifiez la taille et la variante avant de valider votre commande.
         </p>
       </section>
 
       <section>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>8. Contact</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>9. Retrait tardif</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Pour toute question relative à votre commande, contactez-nous sur WhatsApp : <strong>+228 70 62 67 96</strong>.
+          Un colis non retiré sous <strong>30 jours</strong> après notification peut entraîner des frais de garde. Contactez-nous pour tout arrangement : <strong>+228 70 62 67 96</strong>.
         </p>
       </section>
     </div>

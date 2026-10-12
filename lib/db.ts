@@ -318,6 +318,72 @@ export async function adminUpdateSetting(key: string, value: unknown): Promise<b
   return !error
 }
 
+// ── Sous-admins ──────────────────────────────────────────────────────────────
+
+export interface SubAdmin {
+  id: string
+  email: string
+  name: string
+  role: 'admin' | 'viewer'
+  permissions: Record<string, boolean>
+  is_active: boolean
+  created_at: string
+}
+
+export const ALL_PERMISSIONS = [
+  { key: 'commandes', label: 'Commandes' },
+  { key: 'produits', label: 'Produits' },
+  { key: 'cycles', label: 'Cycles' },
+  { key: 'bordereaux', label: 'Bordereaux' },
+  { key: 'douane', label: 'Douane' },
+  { key: 'clients', label: 'Clients' },
+  { key: 'archives', label: 'Archives' },
+  { key: 'journal', label: 'Journal' },
+  { key: 'parametres', label: 'Paramètres' },
+]
+
+export async function adminGetSubAdmins(): Promise<SubAdmin[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('admins') as any)
+    .select('*')
+    .neq('role', 'super_admin')
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export async function adminCreateSubAdmin(data: {
+  email: string
+  name: string
+  role: 'admin' | 'viewer'
+  permissions: Record<string, boolean>
+}): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('admins') as any)
+    .insert({ ...data, is_active: true })
+  if (error) { console.error('adminCreateSubAdmin:', error.message) }
+  return !error
+}
+
+export async function adminUpdateSubAdmin(id: string, updates: Partial<SubAdmin>): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('admins') as any)
+    .update(updates)
+    .eq('id', id)
+  return !error
+}
+
+export async function adminToggleSubAdmin(id: string, isActive: boolean): Promise<boolean> {
+  return adminUpdateSubAdmin(id, { is_active: isActive })
+}
+
+export async function adminDeleteSubAdmin(id: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('admins') as any)
+    .delete()
+    .eq('id', id)
+  return !error
+}
+
 export async function adminGetDashboardStats(): Promise<{
   total: number; revenue: number; pending: number; paid: number; recent: any[]
 }> {

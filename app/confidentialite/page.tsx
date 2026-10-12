@@ -6,62 +6,55 @@ export default function Confidentialite() {
 
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>1. Données collectées</h2>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          SAFEL GROUP collecte les données personnelles suivantes lorsque vous passez une commande ou créez un compte :
+        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 8 }}>
+          Nous collectons : nom, téléphone, e-mail, historique de commandes et captures de preuve de paiement. Nous ne conservons aucun code secret ni mot de passe de portefeuille mobile.
         </p>
-        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20, marginTop: 8 }}>
-          <li>Nom et prénom</li>
-          <li>Numéro de téléphone (WhatsApp)</li>
-          <li>Adresse e-mail (optionnelle)</li>
-          <li>Historique de commandes</li>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>2. Utilisation</h2>
+        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
+          <li>Traiter vos commandes</li>
+          <li>Vous prévenir à chaque étape : paiement validé, arrivée à Lomé, douane à régler, colis prêt</li>
+          <li>Gérer les remboursements et répondre à vos demandes</li>
+          <li>Pas de publicité sans votre accord</li>
         </ul>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>2. Finalité de la collecte</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>3. Partage</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Ces données sont collectées exclusivement pour :
+          Uniquement avec les services nécessaires : Supabase (comptes et base de données), l'hébergeur Vercel, les transporteurs et livreurs (nom, téléphone, adresse de livraison). Nous ne vendons pas vos données.
         </p>
-        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20, marginTop: 8 }}>
-          <li>Traiter et suivre vos commandes</li>
-          <li>Vous contacter pour vous informer de l'avancement de votre commande</li>
-          <li>Vous envoyer votre bon de commande</li>
-          <li>Gérer votre compte client</li>
+      </section>
+
+      <section style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>4. Conservation</h2>
+        <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
+          <li><strong>Compte :</strong> tant qu'il est actif.</li>
+          <li><strong>Commandes et reçus :</strong> 5 ans.</li>
+          <li><strong>Preuves de paiement :</strong> 12 mois après la livraison, puis supprimées.</li>
         </ul>
-      </section>
-
-      <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>3. Conservation des données</h2>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Vos données sont conservées pendant la durée nécessaire au traitement de votre commande et pour une période de 2 ans après votre dernière commande, conformément aux obligations légales en vigueur au Togo.
-        </p>
-      </section>
-
-      <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>4. Partage des données</h2>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          SAFEL GROUP ne vend ni ne cède vos données personnelles à des tiers. Vos données sont stockées de manière sécurisée via Supabase (infrastructure cloud). Elles ne sont accessibles qu'aux membres de l'équipe SAFEL GROUP dans le cadre strict du traitement de vos commandes.
-        </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>5. Vos droits</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles. Pour exercer ces droits, contactez-nous via WhatsApp au <strong>+228 70 62 67 96</strong>. Nous traiterons votre demande dans un délai de 7 jours ouvrables.
+          Vous disposez d'un droit d'accès, de correction ou de suppression de vos données. Adressez votre demande par WhatsApp au <strong>+228 70 62 67 96</strong>. Réponse sous 30 jours.
         </p>
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>6. Cookies</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>6. Sécurité</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Ce site utilise des cookies techniques nécessaires à son fonctionnement (session admin, panier). Aucun cookie publicitaire ou de tracking tiers n'est utilisé.
+          Connexion chiffrée (HTTPS), accès restreint à l'équipe SAFEL GROUP, mots de passe chiffrés via Supabase Auth.
         </p>
       </section>
 
       <section>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>7. Contact</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>7. Cookies</h2>
         <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-          Pour toute question concernant vos données personnelles : <strong>+228 70 62 67 96</strong> (WhatsApp).
+          Uniquement les cookies nécessaires à la connexion et au panier. Aucun cookie publicitaire ou de tracking tiers.
         </p>
       </section>
     </div>
