@@ -32,7 +32,7 @@ export default function Confidentialite() {
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>4. Conservation</h2>
         <ul style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 2, paddingLeft: 20 }}>
           <li><strong>Compte :</strong> tant qu'il est actif.</li>
-          <li><strong>Commandes et reçus :</strong> 5 ans.</li>
+          <li><strong>Commandes et reçus :</strong> 1 an.</li>
           <li><strong>Preuves de paiement :</strong> 12 mois après la livraison, puis supprimées.</li>
         </ul>
       </section>
