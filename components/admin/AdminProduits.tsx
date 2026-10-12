@@ -8,7 +8,8 @@ const CATEGORIES = ['Beauté', 'Électronique', 'Mode Femme', 'Mode Homme', 'Mai
 
 const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
-  colors: '', sizes: '', stock: '10', is_active: true,
+  colors: [] as string[], colorInput: '',
+  sizes: '' as string, stock: '10', is_active: true,
 }
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
@@ -33,6 +34,14 @@ export default function AdminProduits() {
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }))
+
+  const addColor = () => {
+    const val = form.colorInput.trim()
+    if (!val || form.colors.includes(val)) { setForm(p => ({ ...p, colorInput: '' })); return }
+    setForm(p => ({ ...p, colors: [...p.colors, val], colorInput: '' }))
+  }
+
+  const removeColor = (c: string) => setForm(p => ({ ...p, colors: p.colors.filter(x => x !== c) }))
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -62,7 +71,7 @@ export default function AdminProduits() {
       price_cfa: parseInt(form.price_cfa) || 0,
       price_cny: form.price_cny ? parseFloat(form.price_cny) : null,
       category: form.category,
-      colors: form.colors.split(',').map(s => s.trim()).filter(Boolean),
+      colors: form.colors,
       sizes: form.sizes.split(',').map(s => s.trim()).filter(Boolean),
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
@@ -146,8 +155,27 @@ export default function AdminProduits() {
             <Field label="Prix (CNY) — optionnel">
               <input type="number" value={form.price_cny} onChange={set('price_cny')} placeholder="22" style={inp} />
             </Field>
-            <Field label="Couleurs disponibles (virgule)">
-              <input value={form.colors} onChange={set('colors')} placeholder="Beige, Blanc, Noir, Rose" style={inp} />
+            <Field label="Couleurs disponibles">
+              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.colors.length > 0 ? 6 : 0 }}>
+                  {form.colors.map(c => (
+                    <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(232,114,12,.18)', border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                      {c}
+                      <button type="button" onClick={() => removeColor(c)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <input
+                    value={form.colorInput}
+                    onChange={set('colorInput')}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor() } }}
+                    placeholder="Ex : Rouge, Noir…"
+                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
+                  />
+                  <button type="button" onClick={addColor} style={{ background: 'rgba(232,114,12,.2)', border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
+                </div>
+              </div>
             </Field>
             <Field label="Tailles disponibles (virgule)">
               <input value={form.sizes} onChange={set('sizes')} placeholder="S, M, L, XL" style={inp} />
