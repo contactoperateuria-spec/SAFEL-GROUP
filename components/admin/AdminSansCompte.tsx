@@ -1,9 +1,13 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { adminGetCycles, getProducts, adminCreateGuestOrder, adminGetOrders } from '@/lib/db'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
+const inp: React.CSSProperties = {
+  width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)',
+  color: '#fff', borderRadius: 4, fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box',
+}
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   pending: { background: 'rgba(251,146,60,.15)', color: '#FB923C' },
   paid: { background: 'rgba(74,222,128,.15)', color: '#4ADE80' },
@@ -11,7 +15,185 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
 }
 const STATUS_LABEL: Record<string, string> = { pending: 'En attente', paid: 'Payé', confirmed: 'Confirmé' }
 
-type LineItem = { productId: string; quantity: number; color: string; unitPrice: number }
+type LineItem = { productId: string; productName: string; quantity: number; color: string; unitPrice: number }
+type PickedProduct = { id: string; name: string; price: number; color: string; quantity: number }
+
+function ProductPickerModal({ products, onConfirm, onClose }: {
+  products: any[]
+  onConfirm: (p: PickedProduct) => void
+  onClose: () => void
+}) {
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<any | null>(null)
+  const [color, setColor] = useState('')
+  const [qty, setQty] = useState(1)
+  const [imgIdx, setImgIdx] = useState(0)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { searchRef.current?.focus() }, [])
+
+  const filtered = search.trim()
+    ? products.filter(p => p.name.toLowerCase().includes(search.toLowerCase())).slice(0, 10)
+    : products.slice(0, 10)
+
+  const handleSelect = (p: any) => {
+    setSelected(p)
+    setColor(p.colors?.[0] ?? '')
+    setQty(1)
+    setImgIdx(0)
+  }
+
+  const handleConfirm = () => {
+    if (!selected) return
+    onConfirm({ id: selected.id, name: selected.name, price: selected.price_cfa, color, quantity: qty })
+  }
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+    >
+      <div style={{ background: '#1A1A2E', border: '1px solid rgba(255,255,255,.12)', borderRadius: 12, width: '100%', maxWidth: 720, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+          <span style={{ fontWeight: 700, fontSize: 14 }}>Choisir un article</span>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,.4)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* Left: search + list */}
+          <div style={{ width: 260, borderRight: '1px solid rgba(255,255,255,.08)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Rechercher…"
+                style={{ ...inp, fontSize: 12 }}
+              />
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {filtered.map((p: any) => (
+                <div
+                  key={p.id}
+                  onClick={() => handleSelect(p)}
+                  style={{
+                    padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,.04)',
+                    background: selected?.id === p.id ? 'rgba(232,114,12,.15)' : 'transparent',
+                    borderLeft: selected?.id === p.id ? '3px solid var(--orange)' : '3px solid transparent',
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 600, color: selected?.id === p.id ? '#fff' : 'rgba(255,255,255,.75)', marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 600 }}>{fmt(p.price_cfa)} FCFA</div>
+                  {p.category && <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 2 }}>{p.category}</div>}
+                </div>
+              ))}
+              {filtered.length === 0 && (
+                <div style={{ padding: 16, fontSize: 12, color: 'rgba(255,255,255,.3)', textAlign: 'center' }}>Aucun résultat</div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: product detail */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+            {!selected ? (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.25)', fontSize: 13, textAlign: 'center' }}>
+                Sélectionne un article à gauche
+              </div>
+            ) : (
+              <div>
+                {/* Images */}
+                {selected.images?.length > 0 ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <img
+                      src={selected.images[imgIdx]}
+                      alt={selected.name}
+                      style={{ width: '100%', height: 200, objectFit: 'contain', borderRadius: 8, background: 'rgba(255,255,255,.04)' }}
+                    />
+                    {selected.images.length > 1 && (
+                      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                        {selected.images.map((img: string, i: number) => (
+                          <img
+                            key={i}
+                            src={img}
+                            onClick={() => setImgIdx(i)}
+                            style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', border: imgIdx === i ? '2px solid var(--orange)' : '2px solid transparent', opacity: imgIdx === i ? 1 : .6 }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.04)', borderRadius: 8, marginBottom: 14, fontSize: 32 }}>
+                    📦
+                  </div>
+                )}
+
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{selected.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--orange)', marginBottom: 12 }}>{fmt(selected.price_cfa)} FCFA</div>
+
+                {selected.description && (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.6, marginBottom: 14 }}>{selected.description}</div>
+                )}
+
+                {/* Couleurs */}
+                {selected.colors?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Couleur</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {selected.colors.map((c: string) => (
+                        <button
+                          key={c}
+                          onClick={() => setColor(c)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                            background: color === c ? 'var(--orange)' : 'rgba(255,255,255,.07)',
+                            border: color === c ? '1px solid var(--orange)' : '1px solid rgba(255,255,255,.12)',
+                            color: color === c ? '#fff' : 'rgba(255,255,255,.65)',
+                          }}
+                        >{c}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantité */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Quantité</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 32, height: 32, borderRadius: 4, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', fontSize: 16, cursor: 'pointer' }}>−</button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      value={qty}
+                      onChange={e => setQty(Math.max(1, Math.min(9999, parseInt(e.target.value) || 1)))}
+                      style={{ ...inp, width: 80, textAlign: 'center' }}
+                    />
+                    <button onClick={() => setQty(q => Math.min(9999, q + 1))} style={{ width: 32, height: 32, borderRadius: 4, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', fontSize: 16, cursor: 'pointer' }}>+</button>
+                  </div>
+                </div>
+
+                {/* Total ligne */}
+                <div style={{ background: 'rgba(232,114,12,.08)', border: '1px solid rgba(232,114,12,.2)', borderRadius: 6, padding: '8px 12px', marginBottom: 14, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,.5)' }}>Sous-total</span>
+                  <span style={{ fontWeight: 700, color: 'var(--orange)' }}>{fmt(selected.price_cfa * qty)} FCFA</span>
+                </div>
+
+                <button
+                  onClick={handleConfirm}
+                  style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer', width: '100%' }}
+                >
+                  Confirmer la sélection
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminSansCompte() {
   const [tab, setTab] = useState<'nouveau' | 'historique'>('nouveau')
@@ -21,9 +203,10 @@ export default function AdminSansCompte() {
   const [loading, setLoading] = useState(true)
 
   const [form, setForm] = useState({ name: '', phone: '', cycleId: '' })
-  const [items, setItems] = useState<LineItem[]>([{ productId: '', quantity: 1, color: '', unitPrice: 0 }])
+  const [items, setItems] = useState<LineItem[]>([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [pickerIdx, setPickerIdx] = useState<number | null>(null)
 
   useEffect(() => {
     Promise.all([adminGetCycles(), getProducts(), adminGetOrders()]).then(([cy, pr, ord]) => {
@@ -36,20 +219,16 @@ export default function AdminSansCompte() {
 
   const total = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0)
 
-  const setItem = (idx: number, field: keyof LineItem, value: string | number) => {
+  const handlePick = (idx: number, p: PickedProduct) => {
     setItems(prev => {
       const next = [...prev]
-      if (field === 'productId') {
-        const prod = products.find((p: any) => p.id === value)
-        next[idx] = { ...next[idx], productId: value as string, unitPrice: prod?.price_cfa ?? 0 }
-      } else {
-        next[idx] = { ...next[idx], [field]: value }
-      }
+      next[idx] = { productId: p.id, productName: p.name, unitPrice: p.price, quantity: p.quantity, color: p.color }
       return next
     })
+    setPickerIdx(null)
   }
 
-  const addItem = () => setItems(prev => [...prev, { productId: '', quantity: 1, color: '', unitPrice: 0 }])
+  const addItem = () => setItems(prev => [...prev, { productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
   const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx))
 
   const handleSave = async () => {
@@ -68,7 +247,7 @@ export default function AdminSansCompte() {
       setSaved(true)
       setGuestOrders(prev => [order, ...prev])
       setForm({ name: '', phone: '', cycleId: '' })
-      setItems([{ productId: '', quantity: 1, color: '', unitPrice: 0 }])
+      setItems([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
       setTimeout(() => setSaved(false), 3000)
     }
     setSaving(false)
@@ -76,9 +255,15 @@ export default function AdminSansCompte() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Commandes sans compte</div>
-      </div>
+      {pickerIdx !== null && (
+        <ProductPickerModal
+          products={products}
+          onConfirm={p => handlePick(pickerIdx, p)}
+          onClose={() => setPickerIdx(null)}
+        />
+      )}
+
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Commandes sans compte</div>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: 'rgba(255,255,255,.05)', borderRadius: 6, padding: 3 }}>
         {(['nouveau', 'historique'] as const).map(t => (
@@ -91,41 +276,65 @@ export default function AdminSansCompte() {
       {tab === 'nouveau' && (
         <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 'var(--radius)', padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 14, color: 'rgba(255,255,255,.85)' }}>Créer une commande manuelle</div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Nom du client</div>
-              <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Prénom Nom" style={{ width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' }} />
+              <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Prénom Nom" style={inp} />
             </div>
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Téléphone</div>
-              <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+228 XX XX XX XX" style={{ width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' }} />
+              <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+228 XX XX XX XX" style={inp} />
             </div>
           </div>
 
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Cycle</div>
-            <select value={form.cycleId} onChange={e => setForm(p => ({ ...p, cycleId: e.target.value }))} style={{ width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 12, padding: '7px 10px', outline: 'none' }}>
+            <select value={form.cycleId} onChange={e => setForm(p => ({ ...p, cycleId: e.target.value }))} style={{ ...inp, cursor: 'pointer' }}>
               <option value="">Sélectionner un cycle…</option>
               {cycles.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Articles</div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 8, textTransform: 'uppercase' }}>Articles</div>
             {items.map((item, idx) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 60px 120px auto', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                <select value={item.productId} onChange={e => setItem(idx, 'productId', e.target.value)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 11, padding: '6px 8px', outline: 'none' }}>
-                  <option value="">Produit…</option>
-                  {products.map((p: any) => <option key={p.id} value={p.id}>{p.name} — {fmt(p.price_cfa)} FCFA</option>)}
-                </select>
-                <input type="number" min={1} value={item.quantity} onChange={e => setItem(idx, 'quantity', parseInt(e.target.value) || 1)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 11, padding: '6px 8px', outline: 'none', textAlign: 'center' }} />
-                <input value={item.color} onChange={e => setItem(idx, 'color', e.target.value)} placeholder="Couleur (opt.)" style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 11, padding: '6px 8px', outline: 'none' }} />
-                {items.length > 1 && (
-                  <button onClick={() => removeItem(idx)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,.4)', fontSize: 16, cursor: 'pointer', padding: '0 4px' }}>×</button>
+              <div key={idx} style={{ marginBottom: 8, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 6, padding: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>Article {idx + 1}</span>
+                  {items.length > 1 && (
+                    <button onClick={() => removeItem(idx)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,.35)', fontSize: 15, cursor: 'pointer', lineHeight: 1 }}>×</button>
+                  )}
+                </div>
+
+                {item.productId ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{item.productName}</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>
+                        {item.color && <span>{item.color} · </span>}
+                        {item.quantity} × {fmt(item.unitPrice)} FCFA
+                        <span style={{ color: 'var(--orange)', fontWeight: 600, marginLeft: 6 }}>{fmt(item.unitPrice * item.quantity)} FCFA</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setPickerIdx(idx)}
+                      style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.6)', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setPickerIdx(idx)}
+                    style={{ background: 'rgba(232,114,12,.1)', border: '1px dashed rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '8px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%' }}
+                  >
+                    + Choisir un article
+                  </button>
                 )}
               </div>
             ))}
-            <button onClick={addItem} style={{ background: 'transparent', border: '1px dashed rgba(255,255,255,.2)', color: 'rgba(255,255,255,.45)', borderRadius: 4, padding: '5px 12px', fontSize: 11, cursor: 'pointer', marginTop: 2 }}>+ Ajouter un article</button>
+            <button onClick={addItem} style={{ background: 'transparent', border: '1px dashed rgba(255,255,255,.2)', color: 'rgba(255,255,255,.45)', borderRadius: 4, padding: '5px 12px', fontSize: 11, cursor: 'pointer', width: '100%' }}>+ Ajouter un article</button>
           </div>
 
           {total > 0 && (
@@ -135,7 +344,7 @@ export default function AdminSansCompte() {
             </div>
           )}
 
-          <button onClick={handleSave} disabled={saving || loading} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '9px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 4, width: '100%', opacity: saving ? .5 : 1 }}>
+          <button onClick={handleSave} disabled={saving || loading} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '9px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', opacity: saving ? .5 : 1 }}>
             {saved ? '✅ Commande enregistrée' : saving ? 'Enregistrement…' : 'Enregistrer la commande'}
           </button>
         </div>
