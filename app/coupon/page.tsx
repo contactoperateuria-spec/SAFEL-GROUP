@@ -1,8 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useCartStore } from '@/lib/store'
 import { generateCouponPDF, downloadPDF } from '@/lib/generateCoupon'
 import { getActiveCycle, createOrder } from '@/lib/db'
+import { getUser, getProfile } from '@/lib/auth'
 
 const DEMO_ORDER = {
   ref: 'SG-2025-0047',
@@ -20,6 +23,7 @@ function fmt(n: number) { return n.toLocaleString('fr-FR') }
 const today = new Date().toLocaleDateString('fr-FR')
 
 export default function CouponPage() {
+  const router = useRouter()
   const cartItems = useCartStore(s => s.items)
   const cartTotal = useCartStore(s => s.total())
   const clearCart = useCartStore(s => s.clearCart)
@@ -34,6 +38,8 @@ export default function CouponPage() {
   const [formDone, setFormDone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [authChecked, setAuthChecked] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   const hasCartItems = cartItems.length > 0
 
@@ -45,6 +51,21 @@ export default function CouponPage() {
 
   useEffect(() => {
     getActiveCycle().then(c => { if (c) setCycleId(c.id) }).catch(() => {})
+    getUser().then(async user => {
+      if (user) {
+        setIsLoggedIn(true)
+        const profile = await getProfile(user.id)
+        if (profile) {
+          setClientName(profile.name)
+          setClientPhone(profile.phone ?? '')
+        }
+      } else if (hasCartItems) {
+        router.push('/connexion?redirect=/coupon')
+        return
+      }
+      setAuthChecked(true)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleConfirmOrder = async () => {

@@ -118,10 +118,11 @@ export async function adminCreateProduct(product: {
   sizes: string[]
   stock: number
   is_active: boolean
+  images?: string[]
 }): Promise<Product | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase.from('products') as any)
-    .insert({ ...product, images: [] })
+    .insert({ ...product, images: product.images ?? [] })
     .select()
     .single()
   if (error) { console.error('adminCreateProduct:', error.message); return null }
