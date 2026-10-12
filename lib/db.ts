@@ -277,6 +277,18 @@ export async function adminCreateGuestOrder(data: {
   return newOrder
 }
 
+export async function adminDeleteProduct(id: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('products') as any).delete().eq('id', id)
+  return !error
+}
+
+export async function adminDeleteCycle(id: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('cycles') as any).delete().eq('id', id)
+  return !error
+}
+
 export async function adminGetArchivedProducts(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase.from('products') as any)
