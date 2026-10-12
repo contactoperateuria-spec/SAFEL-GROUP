@@ -53,7 +53,7 @@ export default function AdminShell() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="admin-root" style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
       <div style={{ width: 200, background: '#16162A', borderRight: '1px solid rgba(255,255,255,.08)', padding: '20px 0', flexShrink: 0 }}>
         <div style={{ padding: '0 16px 20px', borderBottom: '1px solid rgba(255,255,255,.08)', marginBottom: 12, fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>

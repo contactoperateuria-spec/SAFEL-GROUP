@@ -259,3 +259,31 @@ ul { list-style: none; }
 @media (max-width: 700px) {
   .steps-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ADMIN DARK THEME — scoped overrides */
+.admin-root {
+  background: #1E1E2E;
+  color: #fff;
+}
+
+.admin-root select {
+  background: #2A2A3E;
+  color: #fff;
+  border-color: rgba(255,255,255,.15);
+}
+
+.admin-root select option {
+  background: #2A2A3E;
+  color: #fff;
+}
+
+.admin-root input,
+.admin-root textarea {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+}
+
+.admin-root input::placeholder,
+.admin-root textarea::placeholder {
+  color: rgba(255,255,255,.3);
+}
