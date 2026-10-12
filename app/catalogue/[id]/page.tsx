@@ -66,22 +66,33 @@ function ProductPageInner() {
   const selections = colors.filter(c => (colorQtys[c] ?? 0) > 0)
 
   const handleAddToCart = () => {
-    const hasColors = colors.length > 0
-    const qty = hasColors ? totalQty : (colorQtys._ ?? 1)
-    const colorSummary = hasColors && selections.length > 0
-      ? selections.map(c => `${c} ×${colorQtys[c]}`).join(', ')
-      : undefined
-    addItem({
-      product_id: product.id,
-      name: product.name,
-      emoji: meta.emoji,
-      bg: meta.bg,
-      image: images[0] ?? undefined,
-      price: product.price_cfa,
-      quantity: qty,
-      size: selectedSize || undefined,
-      color: colorSummary,
-    })
+    if (colors.length > 0) {
+      const entries = Object.entries(colorQtys).filter(([, q]) => q > 0)
+      entries.forEach(([color, qty]) => {
+        addItem({
+          product_id: product.id,
+          name: product.name,
+          emoji: meta.emoji,
+          bg: meta.bg,
+          image: images[0] ?? undefined,
+          price: product.price_cfa,
+          quantity: qty,
+          size: selectedSize || undefined,
+          color,
+        })
+      })
+    } else {
+      addItem({
+        product_id: product.id,
+        name: product.name,
+        emoji: meta.emoji,
+        bg: meta.bg,
+        image: images[0] ?? undefined,
+        price: product.price_cfa,
+        quantity: colorQtys._ ?? 1,
+        size: selectedSize || undefined,
+      })
+    }
     router.push('/panier')
   }
 
