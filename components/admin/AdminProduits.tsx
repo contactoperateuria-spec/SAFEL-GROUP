@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { adminGetProducts, adminCreateProduct, adminArchiveProduct } from '@/lib/db'
+import { useState, useEffect, useRef } from 'react'
+import { adminGetProducts, adminCreateProduct, adminArchiveProduct, uploadProductImage } from '@/lib/db'
 import type { Product } from '@/lib/types'
 import { toDisplayProduct } from '@/lib/displayHelpers'
 
@@ -18,8 +18,11 @@ export default function AdminProduits() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
     setLoading(true)
@@ -31,12 +34,28 @@ export default function AdminProduits() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }))
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
   const handleSave = async () => {
     if (!form.name.trim() || !form.price_cfa) {
       setFeedback({ type: 'err', msg: 'Nom et prix sont obligatoires.' })
       return
     }
     setSaving(true)
+    let imageUrl: string | null = null
+    if (imageFile) {
+      imageUrl = await uploadProductImage(imageFile)
+      if (!imageUrl) {
+        setFeedback({ type: 'err', msg: 'Erreur upload image. Vérifiez le fichier.' })
+        setSaving(false)
+        return
+      }
+    }
     const result = await adminCreateProduct({
       name: form.name.trim(),
       description: form.description.trim(),
@@ -47,11 +66,14 @@ export default function AdminProduits() {
       sizes: form.sizes.split(',').map(s => s.trim()).filter(Boolean),
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
+      images: imageUrl ? [imageUrl] : [],
     })
     setSaving(false)
     if (result) {
       setFeedback({ type: 'ok', msg: `✅ "${result.name}" ajouté au catalogue.` })
       setForm(EMPTY_FORM)
+      setImageFile(null)
+      setImagePreview(null)
       setShowForm(false)
       load()
     } else {
@@ -70,7 +92,7 @@ export default function AdminProduits() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700 }}>Produits ({products.length})</div>
-        <button onClick={() => setShowForm(v => !v)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => { setShowForm(v => !v); setImageFile(null); setImagePreview(null) }} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
           {showForm ? '✕ Annuler' : '+ Ajouter un produit'}
         </button>
       </div>
@@ -81,10 +103,34 @@ export default function AdminProduits() {
         </div>
       )}
 
-      {/* Formulaire ajout */}
       {showForm && (
         <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(232,114,12,.3)', borderRadius: 'var(--radius)', padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: 'rgba(255,255,255,.9)' }}>Nouveau produit</div>
+
+          {/* Upload photo */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>Photo du produit</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{ width: 80, height: 80, borderRadius: 8, border: '2px dashed rgba(232,114,12,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,.03)' }}
+              >
+                {imagePreview
+                  ? <img src={imagePreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ fontSize: 28 }}>📷</span>
+                }
+              </div>
+              <div>
+                <button type="button" onClick={() => fileInputRef.current?.click()} style={{ background: 'rgba(232,114,12,.15)', border: '1px solid rgba(232,114,12,.3)', color: 'var(--orange)', borderRadius: 4, padding: '6px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  {imageFile ? 'Changer la photo' : 'Choisir une photo'}
+                </button>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 4 }}>JPG, PNG, WebP · Max 5 Mo</div>
+                {imageFile && <div style={{ fontSize: 10, color: '#4ADE80', marginTop: 2 }}>✓ {imageFile.name}</div>}
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} style={{ display: 'none' }} />
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <Field label="Nom du produit *">
               <input value={form.name} onChange={set('name')} placeholder="Ex : Sérum Vitamine C 30ml" style={inp} />
@@ -119,13 +165,12 @@ export default function AdminProduits() {
               Visible dans le catalogue immédiatement
             </label>
             <button onClick={handleSave} disabled={saving} style={{ marginLeft: 'auto', background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? .7 : 1 }}>
-              {saving ? 'Enregistrement…' : 'Ajouter au catalogue'}
+              {saving ? (imageFile ? 'Upload en cours…' : 'Enregistrement…') : 'Ajouter au catalogue'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Liste produits */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 12, color: 'rgba(255,255,255,.35)' }}>Chargement…</div>
       ) : products.length === 0 ? (
@@ -137,16 +182,19 @@ export default function AdminProduits() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {products.map(p => {
             const d = toDisplayProduct(p)
+            const img = p.images?.[0]
             return (
               <div key={p.id} style={{ background: 'rgba(255,255,255,.05)', border: `1px solid ${p.is_active ? 'rgba(255,255,255,.1)' : 'rgba(239,68,68,.2)'}`, borderRadius: 'var(--radius)', padding: 12, display: 'flex', gap: 10, alignItems: 'center', opacity: p.is_active ? 1 : .6 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 8, background: d.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{d.emoji}</div>
+                <div style={{ width: 48, height: 48, borderRadius: 8, background: d.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
+                  {img ? <img src={img} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : d.emoji}
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)' }}>{p.category} · {fmt(p.price_cfa)} FCFA</div>
                   <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, fontWeight: 600, ...(p.is_active ? { background: 'rgba(74,222,128,.15)', color: '#4ADE80' } : { background: 'rgba(239,68,68,.15)', color: '#F87171' }) }}>{p.is_active ? 'Actif' : 'Archivé'}</span>
                     <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.45)' }}>Stock : {p.stock}</span>
-                    {p.colors.length > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,.08)', color: 'rgba(255,255,255,.45)' }}>{p.colors.length} couleur{p.colors.length > 1 ? 's' : ''}</span>}
+                    {!img && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(232,114,12,.1)', color: 'rgba(232,114,12,.7)' }}>Sans photo</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -175,8 +223,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function adminUpdateProduct(id: string, updates: any) {
+function adminUpdateProduct(id: string, updates: Record<string, unknown>) {
   return import('@/lib/db').then(m => m.adminUpdateProduct(id, updates))
 }
 

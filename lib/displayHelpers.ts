@@ -10,6 +10,7 @@ interface DisplayProduct {
   price: number
   category: string
   moq: number
+  image?: string
 }
 
 const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
@@ -38,6 +39,7 @@ export function toDisplayProduct(p: Product): DisplayProduct {
     price: p.price_cfa,
     category: p.category ?? 'Divers',
     moq: 1,
+    image: p.images?.[0] ?? undefined,
   }
 }
 

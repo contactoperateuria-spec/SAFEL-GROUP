@@ -128,7 +128,11 @@ export default function CataloguePage() {
         <div className="product-grid">
           {displayed.map(p => (
             <Link href={`/catalogue/${p.id}`} key={p.id} className="product-card">
-              <div className="product-img" style={{ background: p.bg }}>{p.emoji}</div>
+              <div className="product-img" style={{ background: p.bg, position: 'relative', overflow: 'hidden' }}>
+                {p.image
+                  ? <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+                  : p.emoji}
+              </div>
               <div className="product-body">
                 {p.badge && <span className={`product-badge ${p.badgeClass}`}>{p.badge}</span>}
                 <div className="product-card-name">{p.name}</div>

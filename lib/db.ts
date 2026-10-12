@@ -87,6 +87,17 @@ export async function getOrderByRef(ref: string): Promise<Order | null> {
   return data
 }
 
+// ── Storage ──────────────────────────────────────────────────────────────────
+
+export async function uploadProductImage(file: File): Promise<string | null> {
+  const ext = file.name.split('.').pop()
+  const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false })
+  if (error) { console.error('uploadProductImage:', error.message); return null }
+  const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+  return data.publicUrl
+}
+
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export async function adminGetProducts(): Promise<Product[]> {
