@@ -1,5 +1,5 @@
 export type CycleStatus = 'open' | 'closed' | 'in_transit' | 'arrived' | 'archived'
-export type OrderStatus = 'pending' | 'confirmed' | 'paid' | 'in_transit' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending' | 'confirmed' | 'paid' | 'in_transit' | 'in_customs' | 'customs_cleared' | 'ready' | 'delivered' | 'cancelled' | 'refunded'
 export type BordereauStatus = 'draft' | 'sent' | 'in_customs' | 'customs_cleared' | 'delivered'
 export type AdminRole = 'super_admin' | 'admin' | 'viewer'
 

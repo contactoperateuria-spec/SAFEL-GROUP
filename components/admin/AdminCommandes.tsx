@@ -5,18 +5,30 @@ import { adminGetOrders, adminUpdateOrderStatus } from '@/lib/db'
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: 'En attente', confirmed: 'Confirmé', paid: 'Payé',
-  in_transit: 'En transit', delivered: 'Livré', cancelled: 'Annulé',
+  pending:         'En attente',
+  confirmed:       'Confirmée',
+  paid:            'Payée',
+  in_transit:      'En transit',
+  in_customs:      'En douane',
+  customs_cleared: 'Dédouanée',
+  ready:           'Prête à retirer',
+  delivered:       'Livrée',
+  cancelled:       'Annulée',
+  refunded:        'Remboursée',
 }
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
-  pending: { background: 'rgba(251,146,60,.15)', color: '#FB923C' },
-  confirmed: { background: 'rgba(147,197,253,.15)', color: '#93C5FD' },
-  paid: { background: 'rgba(74,222,128,.15)', color: '#4ADE80' },
-  in_transit: { background: 'rgba(147,197,253,.15)', color: '#93C5FD' },
-  delivered: { background: 'rgba(74,222,128,.2)', color: '#4ADE80' },
-  cancelled: { background: 'rgba(239,68,68,.15)', color: '#F87171' },
+  pending:         { background: 'rgba(251,146,60,.15)',  color: '#FB923C' },
+  confirmed:       { background: 'rgba(147,197,253,.15)', color: '#93C5FD' },
+  paid:            { background: 'rgba(74,222,128,.15)',  color: '#4ADE80' },
+  in_transit:      { background: 'rgba(99,179,237,.15)',  color: '#63B3ED' },
+  in_customs:      { background: 'rgba(251,191,36,.15)',  color: '#FBBF24' },
+  customs_cleared: { background: 'rgba(167,139,250,.15)', color: '#A78BFA' },
+  ready:           { background: 'rgba(52,211,153,.15)',  color: '#34D399' },
+  delivered:       { background: 'rgba(74,222,128,.2)',   color: '#4ADE80' },
+  cancelled:       { background: 'rgba(239,68,68,.15)',   color: '#F87171' },
+  refunded:        { background: 'rgba(156,163,175,.15)', color: '#9CA3AF' },
 }
-const ALL_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'delivered', 'cancelled']
+const ALL_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered', 'cancelled', 'refunded']
 const FILTER_OPTIONS = ['Tous statuts', ...ALL_STATUSES.map(s => STATUS_LABEL[s])]
 
 export default function AdminCommandes() {
