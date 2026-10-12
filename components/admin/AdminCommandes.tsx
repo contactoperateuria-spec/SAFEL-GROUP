@@ -1,69 +1,107 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { adminGetOrders, adminUpdateOrderStatus } from '@/lib/db'
 
-const ORDERS = [
-  { ref: 'SG-2025-0047', client: 'Adjobi Kossi', phone: '+228 90 00 00 00', desc: 'Sérum ×2, Écouteurs ×1, Robe ×2', amount: '56 000 FCFA', status: 'pending', statusLabel: 'En attente' },
-  { ref: 'SG-2025-0046', client: 'Ami Dossou', phone: '+228 91 00 00 00', desc: 'Robe florale ×2', amount: '29 000 FCFA', status: 'paid', statusLabel: 'Payé' },
-  { ref: 'SG-2025-0041', client: 'Kofi Mensah', phone: '+228 92 00 00 00', desc: 'Écouteurs ×1', amount: '18 000 FCFA', status: 'transit', statusLabel: 'En transit' },
-]
+function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
-const badge = (s: string): React.CSSProperties => ({
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'En attente', confirmed: 'Confirmé', paid: 'Payé',
+  in_transit: 'En transit', delivered: 'Livré', cancelled: 'Annulé',
+}
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
   pending: { background: 'rgba(251,146,60,.15)', color: '#FB923C' },
+  confirmed: { background: 'rgba(147,197,253,.15)', color: '#93C5FD' },
   paid: { background: 'rgba(74,222,128,.15)', color: '#4ADE80' },
-  transit: { background: 'rgba(147,197,253,.15)', color: '#93C5FD' },
-}[s] ?? {})
-
-const STATUTS = ['Tous statuts', 'En attente', 'Payé', 'En transit', 'Arrivé à Lomé', 'Livré']
+  in_transit: { background: 'rgba(147,197,253,.15)', color: '#93C5FD' },
+  delivered: { background: 'rgba(74,222,128,.2)', color: '#4ADE80' },
+  cancelled: { background: 'rgba(239,68,68,.15)', color: '#F87171' },
+}
+const ALL_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'delivered', 'cancelled']
+const FILTER_OPTIONS = ['Tous statuts', ...ALL_STATUSES.map(s => STATUS_LABEL[s])]
 
 export default function AdminCommandes() {
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const filtered = ORDERS.filter(o => o.ref.toLowerCase().includes(search.toLowerCase()) || o.client.toLowerCase().includes(search.toLowerCase()))
+  const [statusFilter, setStatusFilter] = useState('Tous statuts')
+  const [updating, setUpdating] = useState<string | null>(null)
+
+  useEffect(() => {
+    adminGetOrders().then(data => { setOrders(data); setLoading(false) })
+  }, [])
+
+  const filtered = orders.filter(o => {
+    const matchSearch = !search || o.customer_name?.toLowerCase().includes(search.toLowerCase()) || o.customer_phone?.includes(search) || o.reference?.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = statusFilter === 'Tous statuts' || STATUS_LABEL[o.status] === statusFilter
+    return matchSearch && matchStatus
+  })
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    setUpdating(id)
+    const ok = await adminUpdateOrderStatus(id, newStatus)
+    if (ok) setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+    setUpdating(null)
+  }
+
+  const handleConfirmPayment = async (id: string) => {
+    await handleStatusChange(id, 'paid')
+  }
+
+  const itemsSummary = (o: any) => {
+    const items = o.order_items ?? []
+    if (!items.length) return '—'
+    return items.slice(0, 2).map((i: any) => `${i.products?.name ?? 'Produit'} ×${i.quantity}`).join(', ') + (items.length > 2 ? ` +${items.length - 2}` : '')
+  }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Commandes</div>
-        <button style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Exporter CSV</button>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>Commandes ({filtered.length})</div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher une commande…" style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '6px 12px', outline: 'none', flex: 1, minWidth: 160 }} />
-        <select style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}>
-          {STATUTS.map(s => <option key={s}>{s}</option>)}
-        </select>
-        <select style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}>
-          <option>Cycle : Octobre 2025</option><option>Septembre 2025</option>
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par nom, téléphone, réf…" style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '6px 12px', outline: 'none', flex: 1, minWidth: 160 }} />
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}>
+          {FILTER_OPTIONS.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 2fr 1fr 1.2fr', gap: 8, padding: '10px 16px', fontSize: 11, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.04em', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-          <span>Réf.</span><span>Client</span><span>Articles</span><span>Montant</span><span>Statut / Action</span>
-        </div>
-        {filtered.map(o => (
-          <div key={o.ref} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 2fr 1fr 1.2fr', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 12, alignItems: 'center', color: 'rgba(255,255,255,.75)' }}>
-            <span style={{ fontWeight: 600 }}>{o.ref}</span>
-            <span>
-              <div>{o.client}</div>
-              <div style={{ fontSize: 10, opacity: .5 }}>{o.phone}</div>
-            </span>
-            <span style={{ fontSize: 11, opacity: .7 }}>{o.desc}</span>
-            <span>{o.amount}</span>
-            <span>
-              <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 4, display: 'block', marginBottom: 4, ...badge(o.status) }}>{o.statusLabel}</span>
-              {o.status === 'pending' && (
-                <button style={{ background: 'var(--orange)', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>✓ Confirmer paiement</button>
-              )}
-              {o.status !== 'pending' && (
-                <select style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 10, padding: '2px 6px', outline: 'none', width: '100%' }}>
-                  <option>Changer statut…</option>
-                  <option>Acheté en Chine</option><option>Expédié</option><option>En transit</option><option>Arrivé à Lomé</option>
-                </select>
-              )}
-            </span>
+      {loading ? (
+        <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 13, padding: 20, textAlign: 'center' }}>Chargement…</div>
+      ) : (
+        <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 2fr 1fr 1.2fr', gap: 8, padding: '10px 16px', fontSize: 11, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.04em', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+            <span>Réf.</span><span>Client</span><span>Articles</span><span>Montant</span><span>Statut / Action</span>
           </div>
-        ))}
-      </div>
-      <div style={{ marginTop: 12, fontSize: 11, color: 'rgba(255,255,255,.35)', textAlign: 'right' }}>47 commandes ce mois · Page 1/4</div>
+          {filtered.map(o => (
+            <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 2fr 1fr 1.2fr', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 12, alignItems: 'center', color: 'rgba(255,255,255,.75)' }}>
+              <span style={{ fontWeight: 600 }}>{o.reference ?? '—'}</span>
+              <span>
+                <div>{o.customer_name}</div>
+                <div style={{ fontSize: 10, opacity: .5 }}>{o.customer_phone}</div>
+              </span>
+              <span style={{ fontSize: 11, opacity: .7 }}>{itemsSummary(o)}</span>
+              <span>{fmt(o.total_cfa ?? 0)} FCFA</span>
+              <span>
+                <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 4, display: 'block', marginBottom: 4, ...(STATUS_STYLE[o.status] ?? {}) }}>{STATUS_LABEL[o.status] ?? o.status}</span>
+                {o.status === 'pending' && (
+                  <button disabled={updating === o.id} onClick={() => handleConfirmPayment(o.id)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer', opacity: updating === o.id ? .5 : 1 }}>
+                    {updating === o.id ? '…' : '✓ Confirmer paiement'}
+                  </button>
+                )}
+                {o.status !== 'pending' && (
+                  <select value="" onChange={e => { if (e.target.value) handleStatusChange(o.id, e.target.value) }} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 10, padding: '2px 6px', outline: 'none', width: '100%' }}>
+                    <option value="">Changer statut…</option>
+                    {ALL_STATUSES.filter(s => s !== o.status).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                  </select>
+                )}
+              </span>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div style={{ padding: '20px 16px', fontSize: 12, color: 'rgba(255,255,255,.35)', textAlign: 'center' }}>Aucune commande trouvée</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

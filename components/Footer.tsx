@@ -34,11 +34,11 @@ export default function Footer() {
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12 }}>Informations</div>
             <ul className="footer-links">
-              <li><a href="#">Règles de la précommande</a></li>
-              <li><a href="#">Mentions légales</a></li>
-              <li><a href="#">Confidentialité</a></li>
+              <li><Link href="/politique-precommande">Règles de la précommande</Link></li>
+              <li><Link href="/mentions-legales">Mentions légales</Link></li>
+              <li><Link href="/confidentialite">Confidentialité</Link></li>
               <li><Link href="/suivi#faq">FAQ</Link></li>
-              <li><a href="#">Contact</a></li>
+              <li><a href="https://wa.me/22870626796" target="_blank" rel="noopener noreferrer">Contact</a></li>
             </ul>
           </div>
 

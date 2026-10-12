@@ -147,3 +147,189 @@ export async function adminCreateCycle(name: string, closedAt: string): Promise<
     .insert({ name, status: 'open', closed_at: closedAt })
   return !error
 }
+
+// ── Admin extended ────────────────────────────────────────────────────────────
+
+export async function adminGetOrders(): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('orders') as any)
+    .select('*, order_items(*, products(name))')
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export async function adminUpdateOrderStatus(id: string, status: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('orders') as any)
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  return !error
+}
+
+export async function adminUpdateOrderCustomsFee(id: string, fee: number): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('orders') as any)
+    .update({ customs_fee_cfa: fee, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  return !error
+}
+
+export async function adminGetCycles(): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('cycles') as any)
+    .select('*')
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export async function adminUpdateCycleStatus(id: string, status: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('cycles') as any)
+    .update({ status })
+    .eq('id', id)
+  return !error
+}
+
+export async function adminGetBordereaux(): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('bordereaux') as any)
+    .select('*, cycles(name)')
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export async function adminCreateBordereau(cycleId: string, number: string, notes?: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('bordereaux') as any)
+    .insert({ cycle_id: cycleId, number, status: 'draft', notes: notes ?? null })
+  return !error
+}
+
+export async function adminUpdateBordereauStatus(id: string, status: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('bordereaux') as any)
+    .update({ status })
+    .eq('id', id)
+  return !error
+}
+
+export async function adminAssignOrdersToBordereau(bordereauId: string, orderIds: string[]): Promise<boolean> {
+  const rows = orderIds.map(order_id => ({ bordereau_id: bordereauId, order_id }))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('bordereau_orders') as any)
+    .upsert(rows, { onConflict: 'bordereau_id,order_id' })
+  return !error
+}
+
+export async function adminGetClients(): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('orders') as any)
+    .select('customer_name, customer_phone, customer_email, total_cfa, created_at')
+    .order('created_at', { ascending: false })
+  if (!data) return []
+  const map: Record<string, { name: string; phone: string; email: string; orders: number; total: number; since: string }> = {}
+  for (const o of data) {
+    const key = o.customer_phone ?? o.customer_name
+    if (!map[key]) {
+      map[key] = { name: o.customer_name, phone: o.customer_phone ?? '', email: o.customer_email ?? '', orders: 0, total: 0, since: o.created_at }
+    }
+    map[key].orders++
+    map[key].total += o.total_cfa ?? 0
+  }
+  return Object.values(map)
+}
+
+export async function adminCreateGuestOrder(data: {
+  cycle_id: string
+  customer_name: string
+  customer_phone: string
+  items: { product_id: string; quantity: number; unit_price: number; color?: string }[]
+  total_amount: number
+}): Promise<any | null> {
+  const rand = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()
+    : String(Math.floor(Math.random() * 900000) + 100000)
+  const ref = `SG-${new Date().getFullYear()}-${rand}`
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: newOrder, error } = await (supabase.from('orders') as any)
+    .insert({
+      cycle_id: data.cycle_id,
+      reference: ref,
+      customer_name: data.customer_name,
+      customer_phone: data.customer_phone,
+      total_cfa: data.total_amount,
+      status: 'pending',
+      is_guest: true,
+    })
+    .select()
+    .single()
+  if (error || !newOrder) return null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('order_items') as any).insert(
+    data.items.map(i => ({
+      order_id: newOrder.id,
+      product_id: i.product_id,
+      quantity: i.quantity,
+      unit_price_cfa: i.unit_price,
+      color: i.color ?? null,
+    }))
+  )
+  return newOrder
+}
+
+export async function adminGetArchivedProducts(): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('products') as any)
+    .select('*')
+    .eq('is_active', false)
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export async function adminGetActivityLog(): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('activity_log') as any)
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  return data ?? []
+}
+
+export async function adminLogActivity(action: string, entityType: string, entityId?: string, details?: Record<string, unknown>): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('activity_log') as any)
+    .insert({ action, entity_type: entityType, entity_id: entityId ?? null, details: details ?? null })
+}
+
+export async function adminGetSettings(): Promise<Record<string, unknown>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('shop_settings') as any)
+    .select('key, value')
+  if (!data) return {}
+  const result: Record<string, unknown> = {}
+  for (const row of data) result[row.key] = row.value
+  return result
+}
+
+export async function adminUpdateSetting(key: string, value: unknown): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('shop_settings') as any)
+    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+  return !error
+}
+
+export async function adminGetDashboardStats(): Promise<{
+  total: number; revenue: number; pending: number; paid: number; recent: any[]
+}> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('orders') as any)
+    .select('id, status, total_cfa, reference, customer_name, customer_phone, created_at')
+    .order('created_at', { ascending: false })
+  if (!data) return { total: 0, revenue: 0, pending: 0, paid: 0, recent: [] }
+  const total = data.length
+  const revenue = data.reduce((s: number, o: any) => s + (o.total_cfa ?? 0), 0)
+  const pending = data.filter((o: any) => o.status === 'pending').length
+  const paid = data.filter((o: any) => o.status === 'paid').length
+  const recent = data.slice(0, 10)
+  return { total, revenue, pending, paid, recent }
+}

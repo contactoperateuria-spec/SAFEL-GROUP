@@ -113,7 +113,7 @@ function ConnexionInner() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5, marginBottom: 16 }}>
                 <input type="checkbox" id="terms" checked={form.terms} onChange={e => update('terms', e.target.checked)} style={{ marginTop: 3, accentColor: 'var(--orange)' }} />
-                <label htmlFor="terms">J&apos;accepte les <a href="#" style={{ color: 'var(--orange)' }}>règles de la précommande</a> et la <a href="#" style={{ color: 'var(--orange)' }}>politique de confidentialité</a>.</label>
+                <label htmlFor="terms">J&apos;accepte les <a href="/politique-precommande" target="_blank" style={{ color: 'var(--orange)' }}>règles de la précommande</a> et la <a href="/confidentialite" target="_blank" style={{ color: 'var(--orange)' }}>politique de confidentialité</a>.</label>
               </div>
               {error && <div style={{ fontSize: 12, color: '#C62828', marginBottom: 12, padding: '8px 12px', background: '#FEE8E8', borderRadius: 6 }}>{error}</div>}
               <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', height: 44, borderRadius: 22, fontSize: 15, justifyContent: 'center', opacity: loading ? .7 : 1 }}>
