@@ -17,6 +17,7 @@ export default function AdminArchives() {
   const [loading, setLoading] = useState(true)
   const [reactivating, setReactivating] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([adminGetArchivedProducts(), adminGetCycles()]).then(([pr, cy]) => {
@@ -35,23 +36,37 @@ export default function AdminArchives() {
 
   const handleDeleteProduct = async (id: string, name: string) => {
     if (!confirm(`Supprimer définitivement "${name}" ? Cette action est irréversible.`)) return
-    setDeleting(id)
+    setDeleting(id); setDeleteError(null)
     const ok = await adminDeleteProduct(id)
-    if (ok) setProducts(prev => prev.filter(p => p.id !== id))
+    if (ok) {
+      setProducts(prev => prev.filter(p => p.id !== id))
+    } else {
+      setDeleteError(`Impossible de supprimer "${name}" : ce produit est lié à des commandes existantes. Il doit rester en archive pour conserver l'historique.`)
+    }
     setDeleting(null)
   }
 
   const handleDeleteCycle = async (id: string, name: string) => {
     if (!confirm(`Supprimer définitivement le cycle "${name}" ? Cette action est irréversible.`)) return
-    setDeleting(id)
+    setDeleting(id); setDeleteError(null)
     const ok = await adminDeleteCycle(id)
-    if (ok) setCycles(prev => prev.filter(c => c.id !== id))
+    if (ok) {
+      setCycles(prev => prev.filter(c => c.id !== id))
+    } else {
+      setDeleteError(`Impossible de supprimer le cycle "${name}" : des commandes y sont encore associées.`)
+    }
     setDeleting(null)
   }
 
   return (
     <div>
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Archives</div>
+
+      {deleteError && (
+        <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', color: '#f87171', borderRadius: 6, padding: '10px 14px', fontSize: 12, marginBottom: 14, lineHeight: 1.6 }}>
+          ⚠️ {deleteError}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: 'rgba(255,255,255,.05)', borderRadius: 6, padding: 3 }}>
         {(['produits', 'cycles'] as const).map(t => (
