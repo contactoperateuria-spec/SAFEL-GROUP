@@ -1,22 +1,21 @@
 import Link from 'next/link'
 import CycleBanner from '@/components/CycleBanner'
+import NouveautesSection from '@/components/NouveautesSection'
 
 const CATEGORIES = [
-  { emoji: '🏠', name: 'Maison & Cuisine' },
+  { emoji: '🧴', name: 'Beauté' },
+  { emoji: '🎧', name: 'Électronique' },
   { emoji: '👗', name: 'Mode Femme' },
   { emoji: '👔', name: 'Mode Homme' },
-  { emoji: '👜', name: 'Accessoires' },
-  { emoji: '📱', name: 'Électronique' },
-  { emoji: '💄', name: 'Beauté' },
+  { emoji: '🪴', name: 'Maison & Cuisine' },
+  { emoji: '💼', name: 'Accessoires' },
   { emoji: '🧸', name: 'Jouets' },
+  { emoji: '⚽', name: 'Sport & Fitness' },
+  { emoji: '🍼', name: 'Bébé & Enfant' },
+  { emoji: '💻', name: 'Informatique' },
+  { emoji: '💊', name: 'Santé & Bien-être' },
+  { emoji: '🚗', name: 'Auto & Moto' },
   { emoji: '📦', name: 'Divers' },
-]
-
-const NOUVEAUTES = [
-  { emoji: '🧴', bg: '#FFF0E6', badge: 'Nouveau', badgeClass: 'badge-new', name: 'Sérum Vitamine C 30ml', price: '4 500 FCFA', moq: 'Minimum : 2 pièces' },
-  { emoji: '🎧', bg: '#E8F0FE', badge: '⭐ Populaire', badgeClass: 'badge-hot', name: 'Écouteurs Bluetooth TWS', price: '18 000 FCFA', moq: 'Minimum : 1 pièce' },
-  { emoji: '🪴', bg: '#F0FAE8', badge: 'Nouveau', badgeClass: 'badge-new', name: 'Pot décoratif moderne', price: '7 200 FCFA', moq: 'Minimum : 3 pièces' },
-  { emoji: '👗', bg: '#FEF3E8', badge: 'Se termine bientôt', badgeClass: 'badge-ending', name: "Robe d'été florale S-XL", price: '14 500 FCFA', moq: 'Minimum : 2 pièces' },
 ]
 
 export default function HomePage() {
@@ -122,19 +121,7 @@ export default function HomePage() {
             <h2 className="section-title" style={{ marginBottom: 0 }}>Nouveautés du cycle</h2>
             <Link href="/catalogue" className="btn-outline" style={{ fontSize: 13, height: 34 }}>Tout voir</Link>
           </div>
-          <div className="product-grid">
-            {NOUVEAUTES.map(p => (
-              <Link href="/catalogue" key={p.name} className="product-card">
-                <div className="product-img" style={{ background: p.bg }}>{p.emoji}</div>
-                <div className="product-body">
-                  <span className={`product-badge ${p.badgeClass}`}>{p.badge}</span>
-                  <div className="product-card-name">{p.name}</div>
-                  <div className="product-card-price">{p.price}</div>
-                  <div className="product-card-moq">{p.moq}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <NouveautesSection />
         </div>
       </div>
 

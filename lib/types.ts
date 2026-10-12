@@ -77,6 +77,7 @@ export interface CartItem {
   name: string
   emoji: string
   bg: string
+  image?: string
   price: number
   quantity: number
   color?: string

@@ -13,7 +13,7 @@ interface DisplayProduct {
   image?: string
 }
 
-const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
+export const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   'Beauté': { emoji: '🧴', bg: '#FFF0E6' },
   'Électronique': { emoji: '🎧', bg: '#E8F0FE' },
   'Mode Femme': { emoji: '👗', bg: '#FEF3E8' },
@@ -21,6 +21,12 @@ const CATEGORY_META: Record<string, { emoji: string; bg: string }> = {
   'Maison & Cuisine': { emoji: '🪴', bg: '#F0FAE8' },
   'Accessoires': { emoji: '💼', bg: '#F5F0FF' },
   'Jouets': { emoji: '🧸', bg: '#FFF7E6' },
+  'Sport & Fitness': { emoji: '⚽', bg: '#E8FFF0' },
+  'Bébé & Enfant': { emoji: '🍼', bg: '#FFF0FB' },
+  'Informatique': { emoji: '💻', bg: '#EFF6FF' },
+  'Santé & Bien-être': { emoji: '💊', bg: '#F0FFF4' },
+  'Auto & Moto': { emoji: '🚗', bg: '#FFF8E8' },
+  'Divers': { emoji: '📦', bg: '#F5F5F5' },
 }
 
 export function toDisplayProduct(p: Product): DisplayProduct {

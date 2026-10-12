@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { getProducts } from '@/lib/db'
 import { toDisplayProduct, DEMO_PRODUCTS, type DisplayProduct } from '@/lib/displayHelpers'
 
-const CATEGORIES = ['Toutes catégories', 'Maison & Cuisine', 'Mode Femme', 'Mode Homme', 'Accessoires', 'Électronique', 'Beauté', 'Jouets']
+const CATEGORIES = ['Toutes catégories', 'Beauté', 'Électronique', 'Mode Femme', 'Mode Homme', 'Maison & Cuisine', 'Accessoires', 'Jouets', 'Sport & Fitness', 'Bébé & Enfant', 'Informatique', 'Santé & Bien-être', 'Auto & Moto', 'Divers']
 const TRIS = ['Pertinence', 'Prix croissant', 'Prix décroissant', 'Nouveautés']
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
@@ -146,7 +146,9 @@ export default function CataloguePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {displayed.map(p => (
             <Link href={`/catalogue/${p.id}`} key={p.id} style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 14, display: 'flex', gap: 14, alignItems: 'center', textDecoration: 'none' }}>
-              <div style={{ width: 72, height: 72, borderRadius: 10, background: p.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, flexShrink: 0 }}>{p.emoji}</div>
+              <div style={{ width: 72, height: 72, borderRadius: 10, background: p.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                {p.image ? <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} /> : p.emoji}
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {p.badge && <span className={`product-badge ${p.badgeClass}`}>{p.badge}</span>}
                 <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{p.name}</div>

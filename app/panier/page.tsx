@@ -33,7 +33,11 @@ export default function PanierPage() {
         <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
           {items.map(item => (
             <div key={item.product_id} style={{ display: 'flex', gap: 12, paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 8, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>{item.emoji}</div>
+              <div style={{ width: 56, height: 56, borderRadius: 8, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+                {item.image
+                  ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+                  : item.emoji}
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>{item.color}{item.size ? ` · ${item.size}` : ''}</div>

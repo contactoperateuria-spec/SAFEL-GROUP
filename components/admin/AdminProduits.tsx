@@ -4,7 +4,7 @@ import { adminGetProducts, adminCreateProduct, adminArchiveProduct, uploadProduc
 import type { Product } from '@/lib/types'
 import { toDisplayProduct } from '@/lib/displayHelpers'
 
-const CATEGORIES = ['Beauté', 'Électronique', 'Mode Femme', 'Mode Homme', 'Maison & Cuisine', 'Accessoires', 'Jouets']
+const CATEGORIES = ['Beauté', 'Électronique', 'Mode Femme', 'Mode Homme', 'Maison & Cuisine', 'Accessoires', 'Jouets', 'Sport & Fitness', 'Bébé & Enfant', 'Informatique', 'Santé & Bien-être', 'Auto & Moto', 'Divers']
 
 const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
