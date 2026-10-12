@@ -41,7 +41,7 @@ export default function AdminArchives() {
     if (ok) {
       setProducts(prev => prev.filter(p => p.id !== id))
     } else {
-      setDeleteError(`Impossible de supprimer "${name}" : ce produit est lié à des commandes existantes. Il doit rester en archive pour conserver l'historique.`)
+      setDeleteError(`Erreur lors de la suppression de "${name}". Réessayez.`)
     }
     setDeleting(null)
   }
