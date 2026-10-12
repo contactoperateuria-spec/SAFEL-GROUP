@@ -337,6 +337,7 @@ export const ALL_PERMISSIONS = [
   { key: 'bordereaux', label: 'Bordereaux' },
   { key: 'douane', label: 'Douane' },
   { key: 'clients', label: 'Clients' },
+  { key: 'sans_compte', label: 'Achat sans compte' },
   { key: 'archives', label: 'Archives' },
   { key: 'journal', label: 'Journal' },
   { key: 'parametres', label: 'Paramètres' },
