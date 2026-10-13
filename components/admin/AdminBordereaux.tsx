@@ -40,6 +40,18 @@ export default function AdminBordereaux() {
     })
   }, [])
 
+  const generateBlNumber = (existingBordereaux: any[]) => {
+    const year = new Date().getFullYear()
+    const prefix = `BL-${year}-`
+    const nums = existingBordereaux
+      .map(b => b.number ?? '')
+      .filter(n => n.startsWith(prefix))
+      .map(n => parseInt(n.replace(prefix, ''), 10))
+      .filter(n => !isNaN(n))
+    const next = nums.length > 0 ? Math.max(...nums) + 1 : 1
+    return `${prefix}${String(next).padStart(3, '0')}`
+  }
+
   const filteredOrders = orders.filter(o => {
     if (!orderSearch) return true
     const q = orderSearch.toLowerCase()
@@ -53,7 +65,7 @@ export default function AdminBordereaux() {
     if (ok) {
       const updated = await adminGetBordereaux()
       setBordereaux(updated)
-      setForm({ number: '', cycleId: '', notes: '' })
+      setForm({ number: generateBlNumber(updated), cycleId: '', notes: '' })
       setShowForm(false)
     }
     setSaving(false)
@@ -82,7 +94,7 @@ export default function AdminBordereaux() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700 }}>Bordereaux & Lots</div>
-        <button onClick={() => setShowForm(!showForm)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ Nouveau bordereau</button>
+        <button onClick={() => { setForm(p => ({ ...p, number: generateBlNumber(bordereaux) })); setShowForm(!showForm) }} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>+ Nouveau bordereau</button>
       </div>
 
       {showForm && (
@@ -90,8 +102,11 @@ export default function AdminBordereaux() {
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Créer un bordereau</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Numéro BL</div>
-              <input value={form.number} onChange={e => setForm(p => ({ ...p, number: e.target.value }))} placeholder="BL-2025-010" style={{ width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase' }}>Numéro BL</span>
+                <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(74,222,128,.12)', color: '#4ADE80' }}>auto</span>
+              </div>
+              <input value={form.number} onChange={e => setForm(p => ({ ...p, number: e.target.value }))} placeholder="BL-2026-001" style={{ width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Cycle</div>
