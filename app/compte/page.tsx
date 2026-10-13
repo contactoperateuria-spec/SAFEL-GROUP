@@ -77,7 +77,7 @@ export default function ComptePage() {
       const phone = p?.phone ?? ''
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('orders') as any)
-        .select('*, order_items(id, quantity, color, unit_price_cfa, products(name, customs_fee_cfa)), cycles(name)')
+        .select('*, order_items(id, quantity, color, unit_price_cfa, products(name, images, customs_fee_cfa)), cycles(name)')
         .or(`customer_email.eq.${user.email},customer_phone.eq.${phone}`)
         .order('created_at', { ascending: false })
       setOrders(data ?? [])
@@ -98,6 +98,7 @@ export default function ComptePage() {
       qty: i.quantity,
       unitPrice: i.unit_price_cfa ?? 0,
       color: i.color ?? '',
+      imageUrl: i.products?.images?.[0] ?? undefined,
     }))
     const calculatedCustoms = (order.order_items ?? []).reduce((s: number, i: any) => s + (i.products?.customs_fee_cfa ?? 0) * i.quantity, 0)
     const bytes = await generateCouponPDF({

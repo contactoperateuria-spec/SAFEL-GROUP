@@ -1,20 +1,39 @@
-import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts, degrees, type PDFImage } from 'pdf-lib'
 
 interface CouponData {
   reference: string
   customerName: string
   customerPhone: string
-  items: { name: string; qty: number; unitPrice: number; color?: string }[]
+  items: { name: string; qty: number; unitPrice: number; color?: string; imageUrl?: string }[]
   totalMarchandises: number
   fraisDouane: number
   cycle: string
   date: string
 }
 
+async function fetchEmbeddableImage(doc: PDFDocument, url: string): Promise<PDFImage | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8) return await doc.embedJpg(bytes)
+    if (bytes[0] === 0x89 && bytes[1] === 0x50) return await doc.embedPng(bytes)
+    return null
+  } catch {
+    return null
+  }
+}
+
 function fmt(n: number) { return n.toLocaleString('fr-FR').replace(/ /g, ' ').replace(/ /g, ' ') + ' FCFA' }
 
 export async function generateCouponPDF(data: CouponData): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
+
+  // Pré-charger les miniatures (JPG/PNG uniquement, WebP ignoré silencieusement)
+  const thumbnails: (PDFImage | null)[] = await Promise.all(
+    data.items.map(item => item.imageUrl ? fetchEmbeddableImage(doc, item.imageUrl) : Promise.resolve(null))
+  )
   const page = doc.addPage([595, 842])
 
   const helveticaBold = await doc.embedFont(StandardFonts.HelveticaBold)
@@ -71,16 +90,23 @@ export async function generateCouponPDF(data: CouponData): Promise<Uint8Array> {
   y -= 26
 
   data.items.forEach((item, i) => {
+    const thumb = thumbnails[i]
+    const rowH = 26
     if (i % 2 === 0) {
-      page.drawRectangle({ x: 40, y: y - 16, width: W - 80, height: 22, color: rgb(0.97, 0.97, 0.97) })
+      page.drawRectangle({ x: 40, y: y - rowH + 6, width: W - 80, height: rowH, color: rgb(0.97, 0.97, 0.97) })
     }
-    const maxName = item.name.length > 35 ? item.name.slice(0, 33) + '...' : item.name
-    page.drawText(maxName, { x: 52, y: y - 10, size: 9, font: helvetica, color: dark })
+    // Miniature (18×18) si disponible
+    if (thumb) {
+      page.drawImage(thumb, { x: 52, y: y - rowH + 10, width: 18, height: 18 })
+    }
+    const textX = thumb ? 74 : 52
+    const maxName = item.name.length > 30 ? item.name.slice(0, 28) + '...' : item.name
+    page.drawText(maxName, { x: textX, y: y - 10, size: 9, font: helvetica, color: dark })
     page.drawText(item.color ?? '-', { x: 260, y: y - 10, size: 9, font: helvetica, color: gray })
     page.drawText(String(item.qty), { x: 400, y: y - 10, size: 9, font: helvetica, color: dark })
     page.drawText(fmt(item.unitPrice), { x: 430, y: y - 10, size: 9, font: helvetica, color: dark })
     page.drawText(fmt(item.unitPrice * item.qty), { x: 490, y: y - 10, size: 9, font: helveticaBold, color: dark })
-    y -= 22
+    y -= rowH
   })
 
   y -= 12

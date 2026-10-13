@@ -97,7 +97,7 @@ export default function CouponPage() {
       })
       if (order) {
         setOrderRef((order as { reference?: string; id: string }).reference ?? order.id)
-        setConfirmedItems(cartItems.map(i => ({ emoji: i.emoji, bg: i.bg, name: i.name, variant: [i.color, i.size].filter(Boolean).join(' · '), qty: i.quantity, unitPrice: i.price })))
+        setConfirmedItems(cartItems.map(i => ({ emoji: i.emoji, bg: i.bg, name: i.name, variant: [i.color, i.size].filter(Boolean).join(' · '), qty: i.quantity, unitPrice: i.price, image: i.image })))
         setConfirmedTotal(cartTotal)
         clearCart()
         setOrderSaved(true)
@@ -128,7 +128,7 @@ export default function CouponPage() {
         reference: displayRef,
         customerName: displayName,
         customerPhone: displayPhone,
-        items: displayItems.map(i => ({ name: i.name, qty: i.qty, unitPrice: i.unitPrice, color: i.variant })),
+        items: displayItems.map(i => ({ name: i.name, qty: i.qty, unitPrice: i.unitPrice, color: i.variant, imageUrl: (i as any).image ?? undefined })),
         totalMarchandises: total,
         fraisDouane: 0,
         cycle: cycleName,
