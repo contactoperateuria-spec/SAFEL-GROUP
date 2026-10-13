@@ -219,8 +219,15 @@ export default function AdminCommandes() {
                               return (
                                 <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
                                   <td style={{ padding: '6px 6px', color: 'rgba(255,255,255,.7)' }}>
-                                    <div>{item.products?.name ?? 'Produit'}</div>
-                                    {item.color && <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{item.color}</div>}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      {item.products?.images?.[0] && (
+                                        <img src={item.products.images[0]} alt="" style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+                                      )}
+                                      <div>
+                                        <div>{item.products?.name ?? 'Produit'}</div>
+                                        {item.color && <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{item.color}</div>}
+                                      </div>
+                                    </div>
                                   </td>
                                   <td style={{ textAlign: 'center', padding: '6px 6px', color: 'rgba(255,255,255,.6)' }}>{item.quantity}</td>
                                   <td style={{ textAlign: 'right', padding: '6px 6px', color: 'rgba(255,255,255,.6)', whiteSpace: 'nowrap' }}>{fmt(item.unit_price_cfa ?? 0)}</td>
