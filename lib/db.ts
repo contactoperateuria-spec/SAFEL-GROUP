@@ -118,6 +118,7 @@ export async function adminCreateProduct(product: {
   sizes: string[]
   stock: number
   is_active: boolean
+  customs_fee_cfa?: number
   images?: string[]
 }): Promise<Product | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
