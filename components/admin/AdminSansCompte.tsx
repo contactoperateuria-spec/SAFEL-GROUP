@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { adminGetCycles, getProducts, adminCreateGuestOrder, adminGetOrders } from '@/lib/db'
+import { generateCouponPDF, downloadPDF } from '@/lib/generateCoupon'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
@@ -246,6 +247,32 @@ export default function AdminSansCompte() {
     if (order) {
       setSaved(true)
       setGuestOrders(prev => [order, ...prev])
+
+      // Télécharger le reçu PDF automatiquement avec miniatures
+      try {
+        const cycleName = cycles.find(c => c.id === form.cycleId)?.name ?? ''
+        const pdfBytes = await generateCouponPDF({
+          reference: order.reference ?? '',
+          customerName: form.name,
+          customerPhone: form.phone,
+          items: validItems.map(i => {
+            const prod = products.find((p: any) => p.id === i.productId)
+            return {
+              name: i.productName,
+              qty: i.quantity,
+              unitPrice: i.unitPrice,
+              color: i.color || undefined,
+              imageUrl: prod?.images?.[0] ?? undefined,
+            }
+          }),
+          totalMarchandises: total,
+          fraisDouane: 0,
+          cycle: cycleName,
+          date: new Date().toLocaleDateString('fr-FR'),
+        })
+        downloadPDF(pdfBytes, `recu-${order.reference ?? 'commande'}.pdf`)
+      } catch { /* silencieux si PDF échoue */ }
+
       setForm({ name: '', phone: '', cycleId: '' })
       setItems([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
       setTimeout(() => setSaved(false), 3000)
