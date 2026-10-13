@@ -104,8 +104,36 @@ export async function adminGetProducts(): Promise<Product[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase.from('products') as any)
     .select('*')
+    .eq('is_active', true)
+    .eq('is_draft', false)
     .order('created_at', { ascending: false })
   return data ?? []
+}
+
+export async function adminGetDraftProducts(): Promise<Product[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('products') as any)
+    .select('*')
+    .eq('is_draft', true)
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+export async function adminActivateDraftProducts(): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('products') as any)
+    .update({ is_active: true, is_draft: false })
+    .eq('is_draft', true)
+  return !error
+}
+
+export async function adminArchiveActiveProducts(): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('products') as any)
+    .update({ is_active: false })
+    .eq('is_active', true)
+    .eq('is_draft', false)
+  return !error
 }
 
 export async function adminCreateProduct(product: {
@@ -118,6 +146,7 @@ export async function adminCreateProduct(product: {
   sizes: string[]
   stock: number
   is_active: boolean
+  is_draft?: boolean
   customs_fee_cfa?: number
   images?: string[]
 }): Promise<Product | null> {

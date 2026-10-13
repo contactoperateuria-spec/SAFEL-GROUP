@@ -26,6 +26,7 @@ export interface Product {
   sizes: string[]
   stock: number
   is_active: boolean
+  is_draft: boolean
   category: string | null
   customs_fee_cfa: number
   created_at: string

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { adminGetProducts, adminCreateProduct, adminArchiveProduct, adminUpdateProduct, uploadProductImage, adminLogActivity } from '@/lib/db'
+import { adminGetProducts, adminGetDraftProducts, adminCreateProduct, adminArchiveProduct, adminUpdateProduct, uploadProductImage, adminLogActivity } from '@/lib/db'
 import type { Product } from '@/lib/types'
 import { toDisplayProduct } from '@/lib/displayHelpers'
 
@@ -10,13 +10,14 @@ const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
   colors: [] as string[], colorInput: '',
   sizes: [] as string[], sizeInput: '',
-  stock: '10', is_active: true, customs_fee_cfa: '0',
+  stock: '10', is_active: true, is_draft: false, customs_fee_cfa: '0',
 }
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
 export default function AdminProduits() {
   const [products, setProducts] = useState<Product[]>([])
+  const [drafts, setDrafts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -29,7 +30,9 @@ export default function AdminProduits() {
 
   const load = () => {
     setLoading(true)
-    adminGetProducts().then(data => { setProducts(data); setLoading(false) }).catch(() => setLoading(false))
+    Promise.all([adminGetProducts(), adminGetDraftProducts()])
+      .then(([active, draft]) => { setProducts(active); setDrafts(draft); setLoading(false) })
+      .catch(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [])
@@ -84,17 +87,20 @@ export default function AdminProduits() {
       colors: form.colors,
       sizes: form.sizes,
       stock: parseInt(form.stock) || 0,
-      is_active: form.is_active,
+      is_active: form.is_draft ? false : form.is_active,
+      is_draft: form.is_draft,
       customs_fee_cfa: parseInt(form.customs_fee_cfa) || 0,
       images: imageUrl ? [imageUrl] : [],
     })
     setSaving(false)
     if (result) {
       adminLogActivity('create', 'products', result.id, {
-        message: `Produit créé : "${result.name}" — ${(result.price_cfa ?? 0).toLocaleString('fr-FR')} FCFA`,
-        name: result.name, price_cfa: result.price_cfa,
+        message: form.is_draft
+          ? `Brouillon créé : "${result.name}" — en attente d'activation`
+          : `Produit créé : "${result.name}" — ${(result.price_cfa ?? 0).toLocaleString('fr-FR')} FCFA`,
+        name: result.name, price_cfa: result.price_cfa, is_draft: form.is_draft,
       })
-      setFeedback({ type: 'ok', msg: `✅ "${result.name}" ajouté au catalogue.` })
+      setFeedback({ type: 'ok', msg: form.is_draft ? `⏳ "${result.name}" enregistré en brouillon.` : `✅ "${result.name}" ajouté au catalogue.` })
       setForm(EMPTY_FORM)
       setImageFile(null)
       setImagePreview(null)
@@ -299,14 +305,49 @@ export default function AdminProduits() {
           <Field label="Description">
             <textarea value={form.description} onChange={set('description')} placeholder="Description du produit…" rows={2} style={{ ...inp, resize: 'vertical', fontFamily: 'inherit', height: 'auto' }} />
           </Field>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(255,255,255,.6)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} />
-              Visible dans le catalogue immédiatement
-            </label>
-            <button onClick={editingProduct ? handleUpdate : handleSave} disabled={saving} style={{ marginLeft: 'auto', background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? .7 : 1 }}>
-              {saving ? (imageFile ? 'Upload en cours…' : 'Enregistrement…') : (editingProduct ? 'Enregistrer les modifications' : 'Ajouter au catalogue')}
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            {!editingProduct && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: form.is_draft ? '#C084FC' : 'rgba(255,255,255,.6)', cursor: 'pointer', background: form.is_draft ? 'rgba(192,132,252,.08)' : 'transparent', border: `1px solid ${form.is_draft ? 'rgba(192,132,252,.3)' : 'transparent'}`, borderRadius: 6, padding: '5px 10px', transition: 'all .15s' }}>
+                <input type="checkbox" checked={form.is_draft} onChange={e => setForm(p => ({ ...p, is_draft: e.target.checked }))} style={{ accentColor: '#C084FC' }} />
+                ⏳ Brouillon — activer au prochain cycle
+              </label>
+            )}
+            <button onClick={editingProduct ? handleUpdate : handleSave} disabled={saving} style={{ marginLeft: 'auto', background: form.is_draft ? 'rgba(192,132,252,.8)' : 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? .7 : 1 }}>
+              {saving ? (imageFile ? 'Upload en cours…' : 'Enregistrement…') : editingProduct ? 'Enregistrer les modifications' : form.is_draft ? 'Enregistrer en brouillon' : 'Ajouter au catalogue'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Section brouillons */}
+      {!loading && drafts.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#C084FC' }}>⏳ Brouillons ({drafts.length})</span>
+            <span style={{ fontSize: 11, color: 'rgba(192,132,252,.6)' }}>— s&apos;activeront à la fermeture du cycle en cours</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {drafts.map(p => {
+              const d = toDisplayProduct(p)
+              const img = p.images?.[0]
+              return (
+                <div key={p.id} style={{ background: 'rgba(192,132,252,.05)', border: '1px solid rgba(192,132,252,.2)', borderRadius: 'var(--radius)', padding: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 8, background: d.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, overflow: 'hidden' }}>
+                    {img ? <img src={img} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : d.emoji}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{p.category} · {fmt(p.price_cfa)} FCFA</div>
+                    <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, background: 'rgba(192,132,252,.15)', color: '#C084FC', fontWeight: 600 }}>Brouillon</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <button onClick={() => openEdit(p)} style={{ border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', padding: '4px 8px', borderRadius: 4, fontSize: 9, cursor: 'pointer', background: 'rgba(232,114,12,.08)', fontWeight: 600 }}>Éditer</button>
+                    <button onClick={() => adminUpdateProduct(p.id, { is_active: true, is_draft: false }).then(load)} style={{ border: '1px solid rgba(74,222,128,.3)', color: '#4ADE80', padding: '4px 8px', borderRadius: 4, fontSize: 9, cursor: 'pointer', background: 'transparent' }}>Activer</button>
+                    <button onClick={() => { if (confirm(`Supprimer le brouillon "${p.name}" ?`)) adminUpdateProduct(p.id, { is_active: false, is_draft: false }).then(load) }} style={{ border: '1px solid rgba(239,68,68,.3)', color: '#F87171', padding: '4px 8px', borderRadius: 4, fontSize: 9, cursor: 'pointer', background: 'transparent' }}>Retirer</button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

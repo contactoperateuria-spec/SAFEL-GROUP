@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle, adminLogActivity } from '@/lib/db'
+import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle, adminLogActivity, adminGetDraftProducts, adminActivateDraftProducts, adminArchiveActiveProducts } from '@/lib/db'
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'OUVERT', closed: 'FERMÉ', in_transit: 'EN TRANSIT',
@@ -28,21 +28,48 @@ export default function AdminCycles() {
   const [form, setForm] = useState({ name: '', closedAt: '' })
   const [saving, setSaving] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [draftCount, setDraftCount] = useState(0)
 
   useEffect(() => {
-    adminGetCycles().then(data => { setCycles(data); setLoading(false) })
+    Promise.all([adminGetCycles(), adminGetDraftProducts()]).then(([data, drafts]) => {
+      setCycles(data)
+      setDraftCount(drafts.length)
+      setLoading(false)
+    })
   }, [])
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     setUpdating(id)
     const cycle = cycles.find(c => c.id === id)
+
+    // Fermeture du cycle : archiver actifs + activer brouillons
+    if (newStatus === 'closed' && cycle?.status === 'open') {
+      const drafts = await adminGetDraftProducts()
+      const msg = drafts.length > 0
+        ? `Fermer le cycle "${cycle.name}" ?\n\n• ${drafts.length} article(s) en brouillon seront activés dans le catalogue.\n• Les articles actifs actuels seront archivés.`
+        : `Fermer le cycle "${cycle.name}" ?\n\nAucun brouillon en attente. Les articles actifs seront archivés.`
+      if (!confirm(msg)) { setUpdating(null); return }
+
+      await adminArchiveActiveProducts()
+      if (drafts.length > 0) {
+        await adminActivateDraftProducts()
+        setDraftCount(0)
+      }
+      adminLogActivity('cycle', 'cycles', id, {
+        message: `Cycle "${cycle.name}" fermé — ${drafts.length} brouillon(s) activé(s), articles précédents archivés`,
+        drafts_activated: drafts.length,
+      })
+    }
+
     const ok = await adminUpdateCycleStatus(id, newStatus)
     if (ok) {
       setCycles(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c))
-      adminLogActivity('cycle', 'cycles', id, {
-        message: `Cycle "${cycle?.name ?? id.slice(0, 8)}" → ${STATUS_LABEL[newStatus] ?? newStatus}`,
-        from: cycle?.status, to: newStatus, name: cycle?.name,
-      })
+      if (newStatus !== 'closed') {
+        adminLogActivity('cycle', 'cycles', id, {
+          message: `Cycle "${cycle?.name ?? id.slice(0, 8)}" → ${STATUS_LABEL[newStatus] ?? newStatus}`,
+          from: cycle?.status, to: newStatus, name: cycle?.name,
+        })
+      }
     }
     setUpdating(null)
   }
@@ -111,6 +138,11 @@ export default function AdminCycles() {
                       Ouvert le {c.opened_at ? new Date(c.opened_at).toLocaleDateString('fr-FR') : '—'}
                       {c.closed_at ? ` · Clôture le ${new Date(c.closed_at).toLocaleDateString('fr-FR')}` : ''}
                     </div>
+                    {isOpen && draftCount > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: '#C084FC', background: 'rgba(192,132,252,.1)', border: '1px solid rgba(192,132,252,.2)', borderRadius: 4, padding: '3px 8px', display: 'inline-block' }}>
+                        ⏳ {draftCount} article{draftCount > 1 ? 's' : ''} en brouillon prêt{draftCount > 1 ? 's' : ''} à activer
+                      </div>
+                    )}
                   </div>
                   <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 4, fontWeight: 600, ...(STATUS_STYLE[c.status] ?? {}) }}>{STATUS_LABEL[c.status] ?? c.status}</span>
                 </div>

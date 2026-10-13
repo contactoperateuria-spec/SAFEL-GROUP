@@ -29,7 +29,7 @@ export default function AdminArchives() {
 
   const handleReactivate = async (id: string) => {
     setReactivating(id)
-    const ok = await adminUpdateProduct(id, { is_active: true })
+    const ok = await adminUpdateProduct(id, { is_active: true, is_draft: false })
     if (ok) setProducts(prev => prev.filter(p => p.id !== id))
     setReactivating(null)
   }
