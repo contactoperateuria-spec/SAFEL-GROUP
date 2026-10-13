@@ -235,12 +235,36 @@ export async function adminCreateBordereau(cycleId: string, number: string, note
   return !error
 }
 
+const BL_TO_ORDER_STATUS: Record<string, string> = {
+  sent:            'in_transit',
+  in_customs:      'in_customs',
+  customs_cleared: 'customs_cleared',
+  delivered:       'delivered',
+}
+
 export async function adminUpdateBordereauStatus(id: string, status: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('bordereaux') as any)
     .update({ status })
     .eq('id', id)
-  return !error
+  if (error) return false
+
+  // Propager le statut aux commandes liées si le statut a un équivalent
+  const orderStatus = BL_TO_ORDER_STATUS[status]
+  if (orderStatus) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: links } = await (supabase.from('bordereau_orders') as any)
+      .select('order_id')
+      .eq('bordereau_id', id)
+    if (links && links.length > 0) {
+      const orderIds = links.map((l: any) => l.order_id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('orders') as any)
+        .update({ status: orderStatus, updated_at: new Date().toISOString() })
+        .in('id', orderIds)
+    }
+  }
+  return true
 }
 
 export async function adminAssignOrdersToBordereau(bordereauId: string, orderIds: string[]): Promise<boolean> {
