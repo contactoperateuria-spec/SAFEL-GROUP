@@ -41,6 +41,7 @@ export default function CouponPage() {
   const [saveError, setSaveError] = useState('')
   const [authChecked, setAuthChecked] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userEmail, setUserEmail] = useState('')
   const [confirmedItems, setConfirmedItems] = useState<typeof DEMO_ORDER.items | null>(null)
   const [confirmedTotal, setConfirmedTotal] = useState<number | null>(null)
 
@@ -59,6 +60,7 @@ export default function CouponPage() {
     getUser().then(async user => {
       if (user) {
         setIsLoggedIn(true)
+        setUserEmail(user.email ?? '')
         const profile = await getProfile(user.id)
         if (profile) {
           setClientName(profile.name)
@@ -89,6 +91,7 @@ export default function CouponPage() {
         cycle_id: cycleId,
         customer_name: clientName.trim(),
         customer_phone: clientPhone.trim(),
+        customer_email: userEmail || undefined,
         items: cartItems.map(i => ({ product_id: i.product_id, quantity: i.quantity, color: i.color ?? i.size, unit_price: i.price })),
         total_amount: cartTotal,
       })
