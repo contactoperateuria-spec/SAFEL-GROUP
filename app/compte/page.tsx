@@ -266,8 +266,15 @@ export default function ComptePage() {
                                 {order.order_items.map((item: any) => (
                                   <tr key={item.id} style={{ borderBottom: '1px solid var(--bg)' }}>
                                     <td style={{ padding: '8px 6px' }}>
-                                      <div style={{ fontWeight: 500 }}>{item.products?.name ?? 'Produit'}</div>
-                                      {item.color && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{item.color}</div>}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                        {item.products?.images?.[0] && (
+                                          <img src={item.products.images[0]} alt="" style={{ width: 24, height: 24, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />
+                                        )}
+                                        <div>
+                                          <div style={{ fontWeight: 500 }}>{item.products?.name ?? 'Produit'}</div>
+                                          {item.color && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{item.color}</div>}
+                                        </div>
+                                      </div>
                                     </td>
                                     <td style={{ textAlign: 'center', padding: '8px 6px' }}>{item.quantity}</td>
                                     <td style={{ textAlign: 'right', padding: '8px 6px', whiteSpace: 'nowrap' }}>{fmt(item.unit_price_cfa ?? 0)}</td>
