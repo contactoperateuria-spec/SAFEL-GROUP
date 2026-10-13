@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { adminGetOrders, adminUpdateOrderStatus } from '@/lib/db'
+import { adminGetOrders, adminUpdateOrderStatus, adminUpdateOrderCustomsFee } from '@/lib/db'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
@@ -37,6 +37,9 @@ export default function AdminCommandes() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Tous statuts')
   const [updating, setUpdating] = useState<string | null>(null)
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [customsFeeInput, setCustomsFeeInput] = useState<Record<string, string>>({})
+  const [savingFee, setSavingFee] = useState<string | null>(null)
 
   useEffect(() => {
     adminGetOrders().then(data => { setOrders(data); setLoading(false) })
@@ -57,6 +60,14 @@ export default function AdminCommandes() {
 
   const handleConfirmPayment = async (id: string) => {
     await handleStatusChange(id, 'paid')
+  }
+
+  const handleSaveCustomsFee = async (id: string) => {
+    const fee = parseInt(customsFeeInput[id] ?? '0') || 0
+    setSavingFee(id)
+    const ok = await adminUpdateOrderCustomsFee(id, fee)
+    if (ok) setOrders(prev => prev.map(o => o.id === id ? { ...o, customs_fee_cfa: fee } : o))
+    setSavingFee(null)
   }
 
   const itemsSummary = (o: any) => {
@@ -80,37 +91,121 @@ export default function AdminCommandes() {
       {loading ? (
         <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 13, padding: 20, textAlign: 'center' }}>Chargement…</div>
       ) : (
-        <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 2fr 1fr 1.2fr', gap: 8, padding: '10px 16px', fontSize: 11, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.04em', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-            <span>Réf.</span><span>Client</span><span>Articles</span><span>Montant</span><span>Statut / Action</span>
-          </div>
-          {filtered.map(o => (
-            <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 2fr 1fr 1.2fr', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 12, alignItems: 'center', color: 'rgba(255,255,255,.75)' }}>
-              <span style={{ fontWeight: 600 }}>{o.reference ?? '—'}</span>
-              <span>
-                <div>{o.customer_name}</div>
-                <div style={{ fontSize: 10, opacity: .5 }}>{o.customer_phone}</div>
-              </span>
-              <span style={{ fontSize: 11, opacity: .7 }}>{itemsSummary(o)}</span>
-              <span>{fmt(o.total_cfa ?? 0)} FCFA</span>
-              <span>
-                <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 4, display: 'block', marginBottom: 4, ...(STATUS_STYLE[o.status] ?? {}) }}>{STATUS_LABEL[o.status] ?? o.status}</span>
-                {o.status === 'pending' && (
-                  <button disabled={updating === o.id} onClick={() => handleConfirmPayment(o.id)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer', opacity: updating === o.id ? .5 : 1 }}>
-                    {updating === o.id ? '…' : '✓ Confirmer paiement'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtered.map(o => {
+            const isOpen = expandedOrder === o.id
+            const needsFee = o.status === 'in_customs' || o.status === 'customs_cleared'
+            return (
+              <div key={o.id} style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+
+                {/* Ligne principale */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr 1fr 1.2fr auto', gap: 8, padding: '10px 14px', fontSize: 12, alignItems: 'center', color: 'rgba(255,255,255,.75)' }}>
+                  <span>
+                    <div style={{ fontWeight: 600, fontSize: 11 }}>{o.reference ?? '—'}</div>
+                    <div style={{ fontSize: 10, opacity: .4 }}>{new Date(o.created_at).toLocaleDateString('fr-FR')}</div>
+                  </span>
+                  <span>
+                    <div>{o.customer_name}</div>
+                    <div style={{ fontSize: 10, opacity: .5 }}>{o.customer_phone}</div>
+                  </span>
+                  <span style={{ fontWeight: 600, color: 'var(--orange)' }}>{fmt(o.total_cfa ?? 0)} FCFA</span>
+                  <span>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 4, display: 'inline-block', marginBottom: 4, ...(STATUS_STYLE[o.status] ?? {}) }}>{STATUS_LABEL[o.status] ?? o.status}</span>
+                    <div>
+                      {o.status === 'pending' && (
+                        <button disabled={updating === o.id} onClick={() => handleConfirmPayment(o.id)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer', opacity: updating === o.id ? .5 : 1 }}>
+                          {updating === o.id ? '…' : '✓ Confirmer paiement'}
+                        </button>
+                      )}
+                      {o.status !== 'pending' && (
+                        <select value="" onChange={e => { if (e.target.value) handleStatusChange(o.id, e.target.value) }} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 10, padding: '2px 6px', outline: 'none', width: '100%' }}>
+                          <option value="">Changer statut…</option>
+                          {ALL_STATUSES.filter(s => s !== o.status).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  </span>
+                  <button onClick={() => setExpandedOrder(isOpen ? null : o.id)} style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', borderRadius: 4, padding: '4px 8px', fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    {isOpen ? '▲' : '▼ Détails'}
                   </button>
+                </div>
+
+                {/* Panneau détail */}
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', padding: '12px 14px', background: 'rgba(0,0,0,.15)' }}>
+
+                    {/* Articles */}
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Articles commandés</div>
+                    {(o.order_items ?? []).length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', marginBottom: 12 }}>Aucun article enregistré</div>
+                    ) : (
+                      <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse', marginBottom: 14 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+                            <th style={{ textAlign: 'left', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Article</th>
+                            <th style={{ textAlign: 'center', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Qté</th>
+                            <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>P.U.</th>
+                            <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {o.order_items.map((item: any) => (
+                            <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                              <td style={{ padding: '6px 6px', color: 'rgba(255,255,255,.7)' }}>
+                                <div>{item.products?.name ?? 'Produit'}</div>
+                                {item.color && <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{item.color}</div>}
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '6px 6px', color: 'rgba(255,255,255,.6)' }}>{item.quantity}</td>
+                              <td style={{ textAlign: 'right', padding: '6px 6px', color: 'rgba(255,255,255,.6)', whiteSpace: 'nowrap' }}>{fmt(item.unit_price_cfa ?? 0)}</td>
+                              <td style={{ textAlign: 'right', padding: '6px 6px', fontWeight: 600, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt((item.unit_price_cfa ?? 0) * item.quantity)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <td colSpan={3} style={{ textAlign: 'right', padding: '8px 6px 0', fontWeight: 700, fontSize: 12, color: 'rgba(255,255,255,.8)' }}>Total marchandises</td>
+                            <td style={{ textAlign: 'right', padding: '8px 6px 0', fontWeight: 700, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt(o.total_cfa ?? 0)} FCFA</td>
+                          </tr>
+                          {(o.customs_fee_cfa ?? 0) > 0 && (
+                            <tr>
+                              <td colSpan={3} style={{ textAlign: 'right', padding: '4px 6px', fontSize: 11, color: 'rgba(255,255,255,.5)' }}>Frais de douane</td>
+                              <td style={{ textAlign: 'right', padding: '4px 6px', fontSize: 11, color: 'rgba(255,255,255,.5)', whiteSpace: 'nowrap' }}>{fmt(o.customs_fee_cfa)} FCFA</td>
+                            </tr>
+                          )}
+                        </tfoot>
+                      </table>
+                    )}
+
+                    {/* Frais de douane — visible si commande en douane */}
+                    {needsFee && (
+                      <div style={{ background: 'rgba(251,191,36,.07)', border: '1px solid rgba(251,191,36,.2)', borderRadius: 6, padding: '10px 12px' }}>
+                        <div style={{ fontSize: 10, color: 'rgba(251,191,36,.8)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Frais de douane (visible par le client)</div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            placeholder={String(o.customs_fee_cfa ?? 0)}
+                            value={customsFeeInput[o.id] ?? (o.customs_fee_cfa > 0 ? String(o.customs_fee_cfa) : '')}
+                            onChange={e => setCustomsFeeInput(prev => ({ ...prev, [o.id]: e.target.value }))}
+                            style={{ flex: 1, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(251,191,36,.3)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}
+                          />
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>FCFA</span>
+                          <button
+                            disabled={savingFee === o.id}
+                            onClick={() => handleSaveCustomsFee(o.id)}
+                            style={{ background: 'rgba(251,191,36,.2)', border: '1px solid rgba(251,191,36,.4)', color: '#FBBF24', borderRadius: 4, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: savingFee === o.id ? 'wait' : 'pointer', opacity: savingFee === o.id ? .6 : 1 }}>
+                            {savingFee === o.id ? '…' : 'Enregistrer'}
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 5 }}>Le client verra ce montant dans son suivi de commande.</div>
+                      </div>
+                    )}
+                  </div>
                 )}
-                {o.status !== 'pending' && (
-                  <select value="" onChange={e => { if (e.target.value) handleStatusChange(o.id, e.target.value) }} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 10, padding: '2px 6px', outline: 'none', width: '100%' }}>
-                    <option value="">Changer statut…</option>
-                    {ALL_STATUSES.filter(s => s !== o.status).map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                  </select>
-                )}
-              </span>
-            </div>
-          ))}
+              </div>
+            )
+          })}
           {filtered.length === 0 && (
-            <div style={{ padding: '20px 16px', fontSize: 12, color: 'rgba(255,255,255,.35)', textAlign: 'center' }}>Aucune commande trouvée</div>
+            <div style={{ padding: '20px 16px', fontSize: 12, color: 'rgba(255,255,255,.35)', textAlign: 'center', background: 'rgba(255,255,255,.03)', borderRadius: 'var(--radius)' }}>Aucune commande trouvée</div>
           )}
         </div>
       )}
