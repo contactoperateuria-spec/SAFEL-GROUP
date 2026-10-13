@@ -278,6 +278,12 @@ export async function adminCreateGuestOrder(data: {
   return newOrder
 }
 
+export async function adminDeleteOrder(id: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('orders') as any).delete().eq('id', id)
+  return !error
+}
+
 export async function adminDeleteProduct(id: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('products') as any).delete().eq('id', id)
