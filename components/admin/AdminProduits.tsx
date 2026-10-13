@@ -9,7 +9,8 @@ const CATEGORIES = ['Beauté', 'Électronique', 'Mode Femme', 'Mode Homme', 'Mai
 const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
   colors: [] as string[], colorInput: '',
-  sizes: '' as string, stock: '10', is_active: true,
+  sizes: [] as string[], sizeInput: '',
+  stock: '10', is_active: true,
 }
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
@@ -43,6 +44,14 @@ export default function AdminProduits() {
 
   const removeColor = (c: string) => setForm(p => ({ ...p, colors: p.colors.filter(x => x !== c) }))
 
+  const addSize = () => {
+    const val = form.sizeInput.trim().toUpperCase()
+    if (!val || form.sizes.includes(val)) { setForm(p => ({ ...p, sizeInput: '' })); return }
+    setForm(p => ({ ...p, sizes: [...p.sizes, val], sizeInput: '' }))
+  }
+
+  const removeSize = (s: string) => setForm(p => ({ ...p, sizes: p.sizes.filter(x => x !== s) }))
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -72,7 +81,7 @@ export default function AdminProduits() {
       price_cny: form.price_cny ? parseFloat(form.price_cny) : null,
       category: form.category,
       colors: form.colors,
-      sizes: form.sizes.split(',').map(s => s.trim()).filter(Boolean),
+      sizes: form.sizes,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
       images: imageUrl ? [imageUrl] : [],
@@ -177,8 +186,27 @@ export default function AdminProduits() {
                 </div>
               </div>
             </Field>
-            <Field label="Tailles disponibles (virgule)">
-              <input value={form.sizes} onChange={set('sizes')} placeholder="S, M, L, XL" style={inp} />
+            <Field label="Tailles disponibles">
+              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.sizes.length > 0 ? 6 : 0 }}>
+                  {form.sizes.map(s => (
+                    <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(99,102,241,.18)', border: '1px solid rgba(99,102,241,.4)', color: '#818CF8', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                      {s}
+                      <button type="button" onClick={() => removeSize(s)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <input
+                    value={form.sizeInput}
+                    onChange={set('sizeInput')}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSize() } }}
+                    placeholder="Ex : S, M, L, XL…"
+                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
+                  />
+                  <button type="button" onClick={addSize} style={{ background: 'rgba(99,102,241,.2)', border: '1px solid rgba(99,102,241,.4)', color: '#818CF8', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
+                </div>
+              </div>
             </Field>
             <Field label="Stock initial">
               <input type="number" value={form.stock} onChange={set('stock')} placeholder="10" style={inp} />

@@ -32,7 +32,7 @@ export default function PanierPage() {
         {/* Articles */}
         <div style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
           {items.map(item => (
-            <div key={item.product_id + (item.color ?? '')} style={{ display: 'flex', gap: 12, paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
+            <div key={item.product_id + (item.color ?? '') + (item.size ?? '')} style={{ display: 'flex', gap: 12, paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
               <div style={{ width: 56, height: 56, borderRadius: 8, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
                 {item.image
                   ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
@@ -40,17 +40,17 @@ export default function PanierPage() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8 }}>
-                  {item.color && <span style={{ background: 'var(--orange-light)', color: 'var(--orange-dark)', borderRadius: 4, padding: '1px 7px', marginRight: 4, fontWeight: 500 }}>{item.color}</span>}
-                  {item.size ? item.size : ''}
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {item.color && <span style={{ background: 'var(--orange-light)', color: 'var(--orange-dark)', borderRadius: 4, padding: '1px 7px', fontWeight: 500 }}>{item.color}</span>}
+                  {item.size && <span style={{ background: '#EEF2FF', color: '#3730A3', borderRadius: 4, padding: '1px 7px', fontWeight: 500 }}>{item.size}</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid var(--border-2)', borderRadius: 8, overflow: 'hidden' }}>
-                    <button onClick={() => updateQty(item.product_id, item.quantity - 1, item.color)} style={{ width: 30, height: 30, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>−</button>
+                    <button onClick={() => updateQty(item.product_id, item.quantity - 1, item.color, item.size)} style={{ width: 30, height: 30, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>−</button>
                     <span style={{ width: 28, textAlign: 'center', fontWeight: 700, fontSize: 14 }}>{item.quantity}</span>
-                    <button onClick={() => updateQty(item.product_id, item.quantity + 1, item.color)} style={{ width: 30, height: 30, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>+</button>
+                    <button onClick={() => updateQty(item.product_id, item.quantity + 1, item.color, item.size)} style={{ width: 30, height: 30, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-2)' }}>+</button>
                   </div>
-                  <button onClick={() => removeItem(item.product_id, item.color)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-3)', padding: '4px 8px', borderRadius: 4 }}>
+                  <button onClick={() => removeItem(item.product_id, item.color, item.size)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-3)', padding: '4px 8px', borderRadius: 4 }}>
                     🗑 Retirer
                   </button>
                 </div>

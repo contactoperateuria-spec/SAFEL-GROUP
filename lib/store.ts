@@ -5,15 +5,17 @@ import type { CartItem } from './types'
 interface CartStore {
   items: CartItem[]
   addItem: (item: CartItem) => void
-  removeItem: (productId: string, color?: string) => void
-  updateQty: (productId: string, qty: number, color?: string) => void
+  removeItem: (productId: string, color?: string, size?: string) => void
+  updateQty: (productId: string, qty: number, color?: string, size?: string) => void
   clearCart: () => void
   total: () => number
   count: () => number
 }
 
-const same = (a: CartItem, productId: string, color?: string) =>
-  a.product_id === productId && (a.color ?? '') === (color ?? '')
+const same = (a: CartItem, productId: string, color?: string, size?: string) =>
+  a.product_id === productId &&
+  (a.color ?? '') === (color ?? '') &&
+  (a.size ?? '') === (size ?? '')
 
 export const useCartStore = create<CartStore>()(
   persist(
@@ -21,12 +23,12 @@ export const useCartStore = create<CartStore>()(
       items: [],
 
       addItem: (newItem) => set(state => {
-        const existing = state.items.find(i => same(i, newItem.product_id, newItem.color))
+        const existing = state.items.find(i => same(i, newItem.product_id, newItem.color, newItem.size))
         if (existing) {
           return {
             items: state.items.map(i =>
-              same(i, newItem.product_id, newItem.color)
-                ? { ...i, quantity: i.quantity + newItem.quantity, size: newItem.size ?? i.size, image: newItem.image ?? i.image }
+              same(i, newItem.product_id, newItem.color, newItem.size)
+                ? { ...i, quantity: i.quantity + newItem.quantity, image: newItem.image ?? i.image }
                 : i
             )
           }
@@ -34,14 +36,14 @@ export const useCartStore = create<CartStore>()(
         return { items: [...state.items, newItem] }
       }),
 
-      removeItem: (productId, color) => set(state => ({
-        items: state.items.filter(i => !same(i, productId, color))
+      removeItem: (productId, color, size) => set(state => ({
+        items: state.items.filter(i => !same(i, productId, color, size))
       })),
 
-      updateQty: (productId, qty, color) => set(state => ({
+      updateQty: (productId, qty, color, size) => set(state => ({
         items: qty <= 0
-          ? state.items.filter(i => !same(i, productId, color))
-          : state.items.map(i => same(i, productId, color) ? { ...i, quantity: qty } : i)
+          ? state.items.filter(i => !same(i, productId, color, size))
+          : state.items.map(i => same(i, productId, color, size) ? { ...i, quantity: qty } : i)
       })),
 
       clearCart: () => set({ items: [] }),
