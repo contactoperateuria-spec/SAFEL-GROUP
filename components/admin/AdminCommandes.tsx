@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { adminGetOrders, adminUpdateOrderStatus, adminUpdateOrderCustomsFee } from '@/lib/db'
+import { adminGetOrders, adminUpdateOrderStatus, adminUpdateProduct } from '@/lib/db'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
@@ -38,6 +38,7 @@ export default function AdminCommandes() {
   const [statusFilter, setStatusFilter] = useState('Tous statuts')
   const [updating, setUpdating] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  // customsFeeInput keyed by product_id
   const [customsFeeInput, setCustomsFeeInput] = useState<Record<string, string>>({})
   const [savingFee, setSavingFee] = useState<string | null>(null)
 
@@ -62,11 +63,20 @@ export default function AdminCommandes() {
     await handleStatusChange(id, 'paid')
   }
 
-  const handleSaveCustomsFee = async (id: string) => {
-    const fee = parseInt(customsFeeInput[id] ?? '0') || 0
-    setSavingFee(id)
-    const ok = await adminUpdateOrderCustomsFee(id, fee)
-    if (ok) setOrders(prev => prev.map(o => o.id === id ? { ...o, customs_fee_cfa: fee } : o))
+  const handleSaveProductFee = async (productId: string, fee: number) => {
+    setSavingFee(productId)
+    const ok = await adminUpdateProduct(productId, { customs_fee_cfa: fee })
+    if (ok) {
+      // Met à jour le fee dans tous les order_items qui contiennent ce produit
+      setOrders(prev => prev.map(o => ({
+        ...o,
+        order_items: (o.order_items ?? []).map((item: any) =>
+          item.products?.id === productId
+            ? { ...item, products: { ...item.products, customs_fee_cfa: fee } }
+            : item
+        )
+      })))
+    }
     setSavingFee(null)
   }
 
@@ -131,76 +141,86 @@ export default function AdminCommandes() {
                 </div>
 
                 {/* Panneau détail */}
-                {isOpen && (
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', padding: '12px 14px', background: 'rgba(0,0,0,.15)' }}>
+                {isOpen && (() => {
+                  const items = o.order_items ?? []
+                  const totalCustoms = items.reduce((s: number, i: any) => s + (i.products?.customs_fee_cfa ?? 0) * i.quantity, 0)
+                  return (
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,.06)', padding: '12px 14px', background: 'rgba(0,0,0,.15)' }}>
 
-                    {/* Articles */}
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Articles commandés</div>
-                    {(o.order_items ?? []).length === 0 ? (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', marginBottom: 12 }}>Aucun article enregistré</div>
-                    ) : (
-                      <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse', marginBottom: 14 }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-                            <th style={{ textAlign: 'left', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Article</th>
-                            <th style={{ textAlign: 'center', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Qté</th>
-                            <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>P.U.</th>
-                            <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {o.order_items.map((item: any) => (
-                            <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                              <td style={{ padding: '6px 6px', color: 'rgba(255,255,255,.7)' }}>
-                                <div>{item.products?.name ?? 'Produit'}</div>
-                                {item.color && <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{item.color}</div>}
-                              </td>
-                              <td style={{ textAlign: 'center', padding: '6px 6px', color: 'rgba(255,255,255,.6)' }}>{item.quantity}</td>
-                              <td style={{ textAlign: 'right', padding: '6px 6px', color: 'rgba(255,255,255,.6)', whiteSpace: 'nowrap' }}>{fmt(item.unit_price_cfa ?? 0)}</td>
-                              <td style={{ textAlign: 'right', padding: '6px 6px', fontWeight: 600, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt((item.unit_price_cfa ?? 0) * item.quantity)}</td>
+                      {/* Articles + frais de douane par produit */}
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Articles commandés</div>
+                      {items.length === 0 ? (
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', marginBottom: 12 }}>Aucun article enregistré</div>
+                      ) : (
+                        <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse', marginBottom: 14 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+                              <th style={{ textAlign: 'left', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Article</th>
+                              <th style={{ textAlign: 'center', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Qté</th>
+                              <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>P.U.</th>
+                              <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Frais douane/u</th>
+                              <th style={{ textAlign: 'right', padding: '4px 6px', color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>Total article</th>
                             </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr>
-                            <td colSpan={3} style={{ textAlign: 'right', padding: '8px 6px 0', fontWeight: 700, fontSize: 12, color: 'rgba(255,255,255,.8)' }}>Total marchandises</td>
-                            <td style={{ textAlign: 'right', padding: '8px 6px 0', fontWeight: 700, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt(o.total_cfa ?? 0)} FCFA</td>
-                          </tr>
-                          {(o.customs_fee_cfa ?? 0) > 0 && (
+                          </thead>
+                          <tbody>
+                            {items.map((item: any) => {
+                              const pid = item.products?.id
+                              const currentFee = item.products?.customs_fee_cfa ?? 0
+                              const inputKey = pid ?? item.id
+                              const inputVal = customsFeeInput[inputKey] ?? String(currentFee)
+                              return (
+                                <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                                  <td style={{ padding: '6px 6px', color: 'rgba(255,255,255,.7)' }}>
+                                    <div>{item.products?.name ?? 'Produit'}</div>
+                                    {item.color && <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{item.color}</div>}
+                                  </td>
+                                  <td style={{ textAlign: 'center', padding: '6px 6px', color: 'rgba(255,255,255,.6)' }}>{item.quantity}</td>
+                                  <td style={{ textAlign: 'right', padding: '6px 6px', color: 'rgba(255,255,255,.6)', whiteSpace: 'nowrap' }}>{fmt(item.unit_price_cfa ?? 0)}</td>
+                                  <td style={{ padding: '6px 6px' }}>
+                                    {pid ? (
+                                      <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
+                                        <input
+                                          type="number"
+                                          value={inputVal}
+                                          onChange={e => setCustomsFeeInput(prev => ({ ...prev, [inputKey]: e.target.value }))}
+                                          style={{ width: 70, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(251,191,36,.3)', color: '#fff', borderRadius: 4, fontSize: 11, padding: '3px 6px', outline: 'none', textAlign: 'right' }}
+                                        />
+                                        <button
+                                          disabled={savingFee === pid}
+                                          onClick={() => handleSaveProductFee(pid, parseInt(inputVal) || 0)}
+                                          style={{ background: 'rgba(251,191,36,.2)', border: '1px solid rgba(251,191,36,.4)', color: '#FBBF24', borderRadius: 4, padding: '3px 7px', fontSize: 10, fontWeight: 600, cursor: savingFee === pid ? 'wait' : 'pointer', opacity: savingFee === pid ? .6 : 1, whiteSpace: 'nowrap' }}>
+                                          {savingFee === pid ? '…' : '✓'}
+                                        </button>
+                                      </div>
+                                    ) : <span style={{ color: 'rgba(255,255,255,.3)' }}>—</span>}
+                                  </td>
+                                  <td style={{ textAlign: 'right', padding: '6px 6px', fontWeight: 600, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt((item.unit_price_cfa ?? 0) * item.quantity)}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                          <tfoot>
                             <tr>
-                              <td colSpan={3} style={{ textAlign: 'right', padding: '4px 6px', fontSize: 11, color: 'rgba(255,255,255,.5)' }}>Frais de douane</td>
-                              <td style={{ textAlign: 'right', padding: '4px 6px', fontSize: 11, color: 'rgba(255,255,255,.5)', whiteSpace: 'nowrap' }}>{fmt(o.customs_fee_cfa)} FCFA</td>
+                              <td colSpan={4} style={{ textAlign: 'right', padding: '8px 6px 0', fontWeight: 700, fontSize: 12, color: 'rgba(255,255,255,.8)' }}>Total marchandises</td>
+                              <td style={{ textAlign: 'right', padding: '8px 6px 0', fontWeight: 700, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt(o.total_cfa ?? 0)} FCFA</td>
                             </tr>
-                          )}
-                        </tfoot>
-                      </table>
-                    )}
-
-                    {/* Frais de douane — visible si commande en douane */}
-                    {needsFee && (
-                      <div style={{ background: 'rgba(251,191,36,.07)', border: '1px solid rgba(251,191,36,.2)', borderRadius: 6, padding: '10px 12px' }}>
-                        <div style={{ fontSize: 10, color: 'rgba(251,191,36,.8)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Frais de douane (visible par le client)</div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <input
-                            type="number"
-                            placeholder={String(o.customs_fee_cfa ?? 0)}
-                            value={customsFeeInput[o.id] ?? (o.customs_fee_cfa > 0 ? String(o.customs_fee_cfa) : '')}
-                            onChange={e => setCustomsFeeInput(prev => ({ ...prev, [o.id]: e.target.value }))}
-                            style={{ flex: 1, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(251,191,36,.3)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}
-                          />
-                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>FCFA</span>
-                          <button
-                            disabled={savingFee === o.id}
-                            onClick={() => handleSaveCustomsFee(o.id)}
-                            style={{ background: 'rgba(251,191,36,.2)', border: '1px solid rgba(251,191,36,.4)', color: '#FBBF24', borderRadius: 4, padding: '6px 12px', fontSize: 11, fontWeight: 600, cursor: savingFee === o.id ? 'wait' : 'pointer', opacity: savingFee === o.id ? .6 : 1 }}>
-                            {savingFee === o.id ? '…' : 'Enregistrer'}
-                          </button>
+                            {totalCustoms > 0 && (
+                              <tr>
+                                <td colSpan={4} style={{ textAlign: 'right', padding: '4px 6px', fontSize: 11, color: 'rgba(251,191,36,.8)' }}>Frais de douane calculés</td>
+                                <td style={{ textAlign: 'right', padding: '4px 6px', fontSize: 11, color: 'rgba(251,191,36,.8)', whiteSpace: 'nowrap' }}>{fmt(totalCustoms)} FCFA</td>
+                              </tr>
+                            )}
+                          </tfoot>
+                        </table>
+                      )}
+                      {totalCustoms === 0 && items.length > 0 && (
+                        <div style={{ fontSize: 10, color: 'rgba(251,191,36,.5)', marginTop: -8, marginBottom: 8 }}>
+                          💡 Frais de douane : entrez le montant par unité sur chaque article, puis cliquez ✓. S&apos;applique à toutes les commandes contenant ce produit.
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginTop: 5 }}>Le client verra ce montant dans son suivi de commande.</div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             )
           })}

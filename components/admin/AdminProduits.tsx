@@ -10,7 +10,7 @@ const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
   colors: [] as string[], colorInput: '',
   sizes: [] as string[], sizeInput: '',
-  stock: '10', is_active: true,
+  stock: '10', is_active: true, customs_fee_cfa: '0',
 }
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
@@ -85,6 +85,7 @@ export default function AdminProduits() {
       sizes: form.sizes,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
+      customs_fee_cfa: parseInt(form.customs_fee_cfa) || 0,
       images: imageUrl ? [imageUrl] : [],
     })
     setSaving(false)
@@ -115,6 +116,7 @@ export default function AdminProduits() {
       sizeInput: '',
       stock: String(p.stock ?? 0),
       is_active: p.is_active ?? true,
+      customs_fee_cfa: String(p.customs_fee_cfa ?? 0),
     })
     setImageFile(null)
     setImagePreview(p.images?.[0] ?? null)
@@ -149,6 +151,7 @@ export default function AdminProduits() {
       sizes: form.sizes,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
+      customs_fee_cfa: parseInt(form.customs_fee_cfa) || 0,
       images,
     })
     setSaving(false)
@@ -276,6 +279,9 @@ export default function AdminProduits() {
             </Field>
             <Field label="Stock initial">
               <input type="number" value={form.stock} onChange={set('stock')} placeholder="10" style={inp} />
+            </Field>
+            <Field label="Frais de douane / unité (FCFA)">
+              <input type="number" value={form.customs_fee_cfa} onChange={set('customs_fee_cfa')} placeholder="0" style={inp} />
             </Field>
           </div>
           <Field label="Description">

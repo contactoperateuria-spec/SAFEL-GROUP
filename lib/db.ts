@@ -153,7 +153,7 @@ export async function adminCreateCycle(name: string, closedAt: string): Promise<
 export async function adminGetOrders(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase.from('orders') as any)
-    .select('*, order_items(*, products(name))')
+    .select('*, order_items(id, quantity, color, unit_price_cfa, products(id, name, customs_fee_cfa)), cycles(name)')
     .order('created_at', { ascending: false })
   return data ?? []
 }

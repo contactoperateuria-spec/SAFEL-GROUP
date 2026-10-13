@@ -27,6 +27,7 @@ export interface Product {
   stock: number
   is_active: boolean
   category: string | null
+  customs_fee_cfa: number
   created_at: string
   updated_at: string
 }

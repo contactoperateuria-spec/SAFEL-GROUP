@@ -77,7 +77,7 @@ export default function ComptePage() {
       const phone = p?.phone ?? ''
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await (supabase.from('orders') as any)
-        .select('*, order_items(id, quantity, color, unit_price_cfa, products(name)), cycles(name)')
+        .select('*, order_items(id, quantity, color, unit_price_cfa, products(name, customs_fee_cfa)), cycles(name)')
         .or(`customer_email.eq.${user.email},customer_phone.eq.${phone}`)
         .order('created_at', { ascending: false })
       setOrders(data ?? [])
@@ -99,13 +99,14 @@ export default function ComptePage() {
       unitPrice: i.unit_price_cfa ?? 0,
       color: i.color ?? '',
     }))
+    const calculatedCustoms = (order.order_items ?? []).reduce((s: number, i: any) => s + (i.products?.customs_fee_cfa ?? 0) * i.quantity, 0)
     const bytes = await generateCouponPDF({
       reference: order.reference ?? order.id,
       customerName: order.customer_name ?? '',
       customerPhone: order.customer_phone ?? '',
       items,
       totalMarchandises: order.total_cfa ?? 0,
-      fraisDouane: order.customs_fee_cfa ?? 0,
+      fraisDouane: calculatedCustoms,
       cycle: order.cycles?.name ?? '',
       date: new Date(order.created_at).toLocaleDateString('fr-FR'),
     })
@@ -168,6 +169,7 @@ export default function ComptePage() {
                   const stepIdx = getStepIndex(order.status)
                   const isOpen = expandedOrder === order.id
                   const isCancelled = order.status === 'cancelled' || order.status === 'refunded'
+                  const totalCustoms = (order.order_items ?? []).reduce((s: number, i: any) => s + (i.products?.customs_fee_cfa ?? 0) * i.quantity, 0)
                   return (
                     <div key={order.id} style={{ background: 'var(--white)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', marginBottom: 14, overflow: 'hidden' }}>
 
@@ -229,9 +231,9 @@ export default function ComptePage() {
                               )
                             })}
                           </div>
-                          {order.status === 'in_customs' && order.customs_fee_cfa > 0 && (
+                          {totalCustoms > 0 && (
                             <div style={{ marginTop: 10, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 6, padding: '8px 12px', fontSize: 12, color: '#92400E' }}>
-                              Frais de douane : <strong>{fmt(order.customs_fee_cfa)} FCFA</strong> — à régler à la livraison
+                              Frais de douane estimés : <strong>{fmt(totalCustoms)} FCFA</strong> — à régler à la livraison
                             </div>
                           )}
                         </div>
@@ -277,10 +279,10 @@ export default function ComptePage() {
                                   <td colSpan={3} style={{ textAlign: 'right', padding: '10px 6px 0', fontWeight: 700, fontSize: 13 }}>Total marchandises</td>
                                   <td style={{ textAlign: 'right', padding: '10px 6px 0', fontWeight: 700, color: 'var(--orange)', whiteSpace: 'nowrap' }}>{fmt(order.total_cfa ?? 0)} FCFA</td>
                                 </tr>
-                                {(order.customs_fee_cfa ?? 0) > 0 && (
+                                {totalCustoms > 0 && (
                                   <tr>
-                                    <td colSpan={3} style={{ textAlign: 'right', padding: '4px 6px', fontSize: 12, color: 'var(--text-2)' }}>Frais de douane</td>
-                                    <td style={{ textAlign: 'right', padding: '4px 6px', fontSize: 12, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{fmt(order.customs_fee_cfa)} FCFA</td>
+                                    <td colSpan={3} style={{ textAlign: 'right', padding: '4px 6px', fontSize: 12, color: 'var(--text-2)' }}>Frais de douane estimés</td>
+                                    <td style={{ textAlign: 'right', padding: '4px 6px', fontSize: 12, color: '#92400E', whiteSpace: 'nowrap' }}>{fmt(totalCustoms)} FCFA</td>
                                   </tr>
                                 )}
                               </tfoot>
