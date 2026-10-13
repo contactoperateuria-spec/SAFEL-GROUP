@@ -7,10 +7,11 @@ function ConnexionInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/compte'
+  const hasError = searchParams.get('error') === '1'
 
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState({ email: '', password: '', name: '', phone: '', terms: false })
-  const [error, setError] = useState('')
+  const [error, setError] = useState(hasError ? 'Le lien de confirmation a expiré. Reconnectez-vous.' : '')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
 
