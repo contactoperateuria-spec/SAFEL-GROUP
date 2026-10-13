@@ -29,7 +29,6 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
   refunded:        { background: 'rgba(156,163,175,.15)', color: '#9CA3AF' },
 }
 const ALL_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered', 'cancelled', 'refunded']
-const FLOW_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered']
 const FILTER_OPTIONS = ['Tous statuts', ...ALL_STATUSES.map(s => STATUS_LABEL[s])]
 
 export default function AdminCommandes() {
@@ -155,51 +154,36 @@ export default function AdminCommandes() {
                   </span>
                   <span style={{ fontWeight: 600, color: 'var(--orange)' }}>{fmt(o.total_cfa ?? 0)} FCFA</span>
                   <span>
-                    {/* Barre de progression des statuts */}
-                    {(() => {
-                      const currentIdx = FLOW_STATUSES.indexOf(o.status)
-                      const isException = o.status === 'cancelled' || o.status === 'refunded'
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          {isException ? (
-                            <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 4, display: 'inline-block', ...(STATUS_STYLE[o.status] ?? {}) }}>
-                              ✓ {STATUS_LABEL[o.status]}
-                            </span>
-                          ) : (
-                            FLOW_STATUSES.map((s, idx) => {
-                              const isCurrent = s === o.status
-                              const isDone = idx < currentIdx
-                              const isNext = idx > currentIdx
-                              const style: React.CSSProperties = isCurrent
-                                ? { ...(STATUS_STYLE[s] ?? {}), fontWeight: 700, cursor: 'default', border: `1px solid ${(STATUS_STYLE[s] as any)?.color ?? 'rgba(255,255,255,.3)'}` }
-                                : isDone
-                                  ? { background: 'rgba(74,222,128,.06)', color: 'rgba(74,222,128,.45)', cursor: 'default', border: '1px solid rgba(74,222,128,.15)' }
-                                  : { background: 'rgba(255,255,255,.04)', color: 'rgba(255,255,255,.3)', cursor: updating === o.id ? 'not-allowed' : 'pointer', border: '1px solid rgba(255,255,255,.07)' }
-                              return (
-                                <button
-                                  key={s}
-                                  disabled={isCurrent || isDone || updating === o.id}
-                                  onClick={() => isNext ? handleStatusChange(o.id, s) : undefined}
-                                  style={{ fontSize: 9, padding: '3px 7px', borderRadius: 4, textAlign: 'left', outline: 'none', width: '100%', ...style }}
-                                >
-                                  {isCurrent ? '✓ ' : isDone ? '✓ ' : '○ '}{STATUS_LABEL[s]}
-                                </button>
-                              )
-                            })
-                          )}
-                          {o.status === 'pending' && (
-                            <button disabled={updating === o.id} onClick={() => handleConfirmPayment(o.id)} style={{ marginTop: 2, background: 'var(--orange)', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: 4, fontSize: 9, fontWeight: 600, cursor: 'pointer', opacity: updating === o.id ? .5 : 1 }}>
-                              {updating === o.id ? '…' : '✓ Confirmer paiement'}
-                            </button>
-                          )}
-                          {o.status === 'pending' && (
-                            <button onClick={() => handleDeleteOrder(o.id)} style={{ background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', color: '#F87171', padding: '3px 8px', borderRadius: 4, fontSize: 9, fontWeight: 600, cursor: 'pointer' }}>
-                              🗑 Supprimer
-                            </button>
-                          )}
-                        </div>
-                      )
-                    })()}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {o.status === 'pending' && (
+                        <button disabled={updating === o.id} onClick={() => handleConfirmPayment(o.id)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer', opacity: updating === o.id ? .5 : 1 }}>
+                          {updating === o.id ? '…' : '✓ Confirmer paiement'}
+                        </button>
+                      )}
+                      {o.status === 'pending' && (
+                        <button onClick={() => handleDeleteOrder(o.id)} style={{ background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', color: '#F87171', padding: '3px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
+                          🗑 Supprimer
+                        </button>
+                      )}
+                      {(() => {
+                        const isPaid = !['pending'].includes(o.status)
+                        const available = ALL_STATUSES.filter(s => {
+                          if (isPaid && (s === 'cancelled' || s === 'refunded')) return false
+                          return true
+                        })
+                        return available.length > 0 ? (
+                          <select
+                            value={o.status}
+                            onChange={e => { if (e.target.value && e.target.value !== o.status) handleStatusChange(o.id, e.target.value) }}
+                            style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 10, padding: '2px 6px', outline: 'none', width: '100%' }}
+                          >
+                            {available.map(s => (
+                              <option key={s} value={s}>{s === o.status ? `✓ ${STATUS_LABEL[s]}` : STATUS_LABEL[s]}</option>
+                            ))}
+                          </select>
+                        ) : null
+                      })()}
+                    </div>
                   </span>
                   <button onClick={() => setExpandedOrder(isOpen ? null : o.id)} style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', borderRadius: 4, padding: '4px 8px', fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {isOpen ? '▲' : '▼ Détails'}
