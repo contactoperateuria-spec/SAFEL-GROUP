@@ -5,6 +5,7 @@ import {
   adminGetSubAdmins, adminCreateSubAdmin, adminToggleSubAdmin, adminDeleteSubAdmin,
   ALL_PERMISSIONS, type SubAdmin,
 } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
 
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)',
@@ -49,11 +50,12 @@ export default function AdminParametres() {
   const [adminsLoading, setAdminsLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
-    email: '', name: '', role: 'admin' as 'admin' | 'viewer',
+    email: '', name: '', role: 'admin' as 'admin' | 'viewer', tempPassword: '',
     permissions: Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true])) as Record<string, boolean>,
   })
   const [formSaving, setFormSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [createdPassword, setCreatedPassword] = useState('')
 
   useEffect(() => {
     adminGetSettings().then(settings => {
@@ -86,12 +88,26 @@ export default function AdminParametres() {
   const togglePerm = (key: string) => setForm(f => ({ ...f, permissions: { ...f.permissions, [key]: !f.permissions[key] } }))
 
   const handleCreate = async () => {
-    if (!form.email || !form.name) { setFormError('Email et nom requis.'); return }
+    if (!form.email || !form.name || !form.tempPassword) { setFormError('Email, nom et mot de passe requis.'); return }
+    if (form.tempPassword.length < 6) { setFormError('Le mot de passe doit faire au moins 6 caractères.'); return }
     setFormSaving(true); setFormError('')
-    const ok = await adminCreateSubAdmin(form)
+
+    // Créer le compte Supabase Auth pour le sous-admin
+    const { error: authError } = await supabase.auth.signUp({ email: form.email, password: form.tempPassword })
+    if (authError && !authError.message.includes('already registered')) {
+      setFormError('Erreur création compte : ' + authError.message)
+      setFormSaving(false)
+      return
+    }
+
+    // Insérer dans la table admins
+    const { email, name, role, permissions } = form
+    const ok = await adminCreateSubAdmin({ email, name, role, permissions })
     if (!ok) { setFormError('Erreur lors de la création.'); setFormSaving(false); return }
+
+    setCreatedPassword(form.tempPassword)
     setShowForm(false)
-    setForm({ email: '', name: '', role: 'admin', permissions: Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true])) })
+    setForm({ email: '', name: '', role: 'admin', tempPassword: '', permissions: Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true])) })
     const data = await adminGetSubAdmins()
     setAdmins(data)
     setFormSaving(false)
@@ -144,10 +160,21 @@ export default function AdminParametres() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)' }}>{admins.length} sous-admin{admins.length !== 1 ? 's' : ''}</div>
-            <button onClick={() => setShowForm(v => !v)} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+            <button onClick={() => { setShowForm(v => !v); setCreatedPassword('') }} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
               {showForm ? 'Annuler' : '+ Ajouter un sous-admin'}
             </button>
           </div>
+
+          {/* Confirmation après création */}
+          {createdPassword && (
+            <div style={{ background: 'rgba(74,222,128,.08)', border: '1px solid rgba(74,222,128,.25)', borderRadius: 8, padding: '12px 16px', marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80', marginBottom: 4 }}>✓ Sous-admin créé</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>Transmets ce mot de passe au sous-admin :</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 700, color: '#fff', marginTop: 6, padding: '6px 10px', background: 'rgba(0,0,0,.3)', borderRadius: 4 }}>{createdPassword}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 6 }}>Il pourra le modifier après sa première connexion. Note : si la confirmation email est activée dans Supabase, le sous-admin doit d&apos;abord confirmer son email.</div>
+              <button onClick={() => setCreatedPassword('')} style={{ marginTop: 8, fontSize: 10, color: 'rgba(255,255,255,.4)', background: 'none', border: 'none', cursor: 'pointer' }}>Fermer</button>
+            </div>
+          )}
 
           {showForm && (
             <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
@@ -160,6 +187,9 @@ export default function AdminParametres() {
                   <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@exemple.com" type="email" style={inputStyle} />
                 </Field>
               </div>
+              <Field label="Mot de passe temporaire">
+                <input value={form.tempPassword} onChange={e => setForm(f => ({ ...f, tempPassword: e.target.value }))} placeholder="Min. 6 caractères" type="text" style={inputStyle} />
+              </Field>
               <Field label="Rôle">
                 <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as 'admin' | 'viewer' }))} style={selectStyle}>
                   <option value="admin">Admin (peut modifier)</option>
