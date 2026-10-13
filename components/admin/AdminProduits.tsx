@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { adminGetProducts, adminCreateProduct, adminArchiveProduct, uploadProductImage } from '@/lib/db'
+import { adminGetProducts, adminCreateProduct, adminArchiveProduct, adminUpdateProduct, uploadProductImage } from '@/lib/db'
 import type { Product } from '@/lib/types'
 import { toDisplayProduct } from '@/lib/displayHelpers'
 
@@ -19,6 +19,7 @@ export default function AdminProduits() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -100,6 +101,71 @@ export default function AdminProduits() {
     setTimeout(() => setFeedback(null), 4000)
   }
 
+  const openEdit = (p: Product) => {
+    setEditingProduct(p)
+    setForm({
+      name: p.name,
+      description: p.description ?? '',
+      price_cfa: String(p.price_cfa),
+      price_cny: p.price_cny != null ? String(p.price_cny) : '',
+      category: p.category ?? 'Beauté',
+      colors: p.colors ?? [],
+      colorInput: '',
+      sizes: p.sizes ?? [],
+      sizeInput: '',
+      stock: String(p.stock ?? 0),
+      is_active: p.is_active ?? true,
+    })
+    setImageFile(null)
+    setImagePreview(p.images?.[0] ?? null)
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleUpdate = async () => {
+    if (!editingProduct) return
+    if (!form.name.trim() || !form.price_cfa) {
+      setFeedback({ type: 'err', msg: 'Nom et prix sont obligatoires.' })
+      return
+    }
+    setSaving(true)
+    let images = editingProduct.images ?? []
+    if (imageFile) {
+      const url = await uploadProductImage(imageFile)
+      if (!url) {
+        setFeedback({ type: 'err', msg: 'Erreur upload image.' })
+        setSaving(false)
+        return
+      }
+      images = [url]
+    }
+    const ok = await adminUpdateProduct(editingProduct.id, {
+      name: form.name.trim(),
+      description: form.description.trim(),
+      price_cfa: parseInt(form.price_cfa) || 0,
+      price_cny: form.price_cny ? parseFloat(form.price_cny) : null,
+      category: form.category,
+      colors: form.colors,
+      sizes: form.sizes,
+      stock: parseInt(form.stock) || 0,
+      is_active: form.is_active,
+      images,
+    })
+    setSaving(false)
+    if (ok) {
+      setFeedback({ type: 'ok', msg: `✅ "${form.name}" mis à jour.` })
+      setEditingProduct(null)
+      setForm(EMPTY_FORM)
+      setImageFile(null)
+      setImagePreview(null)
+      setShowForm(false)
+      load()
+    } else {
+      setFeedback({ type: 'err', msg: 'Erreur lors de la mise à jour.' })
+    }
+    setTimeout(() => setFeedback(null), 4000)
+  }
+
   const handleArchive = async (id: string, name: string) => {
     if (!confirm(`Archiver "${name}" ? Il ne sera plus visible dans le catalogue.`)) return
     await adminArchiveProduct(id)
@@ -110,7 +176,7 @@ export default function AdminProduits() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700 }}>Produits ({products.length})</div>
-        <button onClick={() => { setShowForm(v => !v); setImageFile(null); setImagePreview(null) }} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => { setShowForm(v => !v); setEditingProduct(null); setForm(EMPTY_FORM); setImageFile(null); setImagePreview(null) }} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
           {showForm ? '✕ Annuler' : '+ Ajouter un produit'}
         </button>
       </div>
@@ -123,7 +189,7 @@ export default function AdminProduits() {
 
       {showForm && (
         <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(232,114,12,.3)', borderRadius: 'var(--radius)', padding: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: 'rgba(255,255,255,.9)' }}>Nouveau produit</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: 'rgba(255,255,255,.9)' }}>{editingProduct ? `Modifier : ${editingProduct.name}` : 'Nouveau produit'}</div>
 
           {/* Upload photo */}
           <div style={{ marginBottom: 14 }}>
@@ -220,8 +286,8 @@ export default function AdminProduits() {
               <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} />
               Visible dans le catalogue immédiatement
             </label>
-            <button onClick={handleSave} disabled={saving} style={{ marginLeft: 'auto', background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? .7 : 1 }}>
-              {saving ? (imageFile ? 'Upload en cours…' : 'Enregistrement…') : 'Ajouter au catalogue'}
+            <button onClick={editingProduct ? handleUpdate : handleSave} disabled={saving} style={{ marginLeft: 'auto', background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? .7 : 1 }}>
+              {saving ? (imageFile ? 'Upload en cours…' : 'Enregistrement…') : (editingProduct ? 'Enregistrer les modifications' : 'Ajouter au catalogue')}
             </button>
           </div>
         </div>
@@ -254,6 +320,7 @@ export default function AdminProduits() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <button onClick={() => openEdit(p)} style={{ border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', padding: '4px 8px', borderRadius: 4, fontSize: 9, cursor: 'pointer', background: 'rgba(232,114,12,.08)', whiteSpace: 'nowrap', fontWeight: 600 }}>Éditer</button>
                   {p.is_active && (
                     <button onClick={() => handleArchive(p.id, p.name)} style={{ border: '1px solid rgba(239,68,68,.3)', color: '#F87171', padding: '4px 8px', borderRadius: 4, fontSize: 9, cursor: 'pointer', background: 'transparent', whiteSpace: 'nowrap' }}>Archiver</button>
                   )}
@@ -277,10 +344,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </div>
   )
-}
-
-function adminUpdateProduct(id: string, updates: Record<string, unknown>) {
-  return import('@/lib/db').then(m => m.adminUpdateProduct(id, updates))
 }
 
 const inp: React.CSSProperties = {
