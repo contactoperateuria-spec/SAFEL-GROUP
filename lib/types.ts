@@ -1,6 +1,5 @@
 export type CycleStatus = 'open' | 'closed' | 'in_transit' | 'arrived' | 'archived'
 export type OrderStatus = 'pending' | 'confirmed' | 'paid' | 'in_transit' | 'in_customs' | 'customs_cleared' | 'ready' | 'delivered' | 'cancelled' | 'refunded'
-export type BordereauStatus = 'draft' | 'sent' | 'in_customs' | 'customs_cleared' | 'delivered'
 export type AdminRole = 'super_admin' | 'admin' | 'viewer'
 
 export interface Cycle {
@@ -61,19 +60,6 @@ export interface OrderItem {
   product?: Product
 }
 
-export interface Bordereau {
-  id: string
-  cycle_id: string | null
-  number: string
-  status: BordereauStatus
-  shipped_at: string | null
-  arrived_at: string | null
-  customs_fees_cfa: number
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
 export interface CartItem {
   product_id: string
   name: string
@@ -93,7 +79,6 @@ export interface Database {
       products: { Row: Product; Insert: Omit<Product, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Product> }
       orders: { Row: Order; Insert: Omit<Order, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Order> }
       order_items: { Row: OrderItem; Insert: Omit<OrderItem, 'id' | 'created_at'>; Update: Partial<OrderItem> }
-      bordereaux: { Row: Bordereau; Insert: Omit<Bordereau, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Bordereau> }
     }
   }
 }

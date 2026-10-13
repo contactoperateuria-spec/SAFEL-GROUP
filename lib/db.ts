@@ -183,7 +183,7 @@ export async function adminCreateCycle(name: string, closedAt: string): Promise<
 export async function adminGetOrders(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase.from('orders') as any)
-    .select('*, order_items(id, quantity, color, unit_price_cfa, products(id, name, images, customs_fee_cfa)), cycles(name), bordereau_orders(bordereaux(number))')
+    .select('*, order_items(id, quantity, color, unit_price_cfa, products(id, name, images, customs_fee_cfa)), cycles(name)')
     .order('created_at', { ascending: false })
   return data ?? []
 }
@@ -217,61 +217,6 @@ export async function adminUpdateCycleStatus(id: string, status: string): Promis
   const { error } = await (supabase.from('cycles') as any)
     .update({ status })
     .eq('id', id)
-  return !error
-}
-
-export async function adminGetBordereaux(): Promise<any[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('bordereaux') as any)
-    .select('*, cycles(name)')
-    .order('created_at', { ascending: false })
-  return data ?? []
-}
-
-export async function adminCreateBordereau(cycleId: string, number: string, notes?: string): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('bordereaux') as any)
-    .insert({ cycle_id: cycleId, number, status: 'draft', notes: notes ?? null })
-  return !error
-}
-
-const BL_TO_ORDER_STATUS: Record<string, string> = {
-  sent:            'in_transit',
-  in_customs:      'in_customs',
-  customs_cleared: 'customs_cleared',
-  delivered:       'delivered',
-}
-
-export async function adminUpdateBordereauStatus(id: string, status: string): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('bordereaux') as any)
-    .update({ status })
-    .eq('id', id)
-  if (error) return false
-
-  // Propager le statut aux commandes liées si le statut a un équivalent
-  const orderStatus = BL_TO_ORDER_STATUS[status]
-  if (orderStatus) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: links } = await (supabase.from('bordereau_orders') as any)
-      .select('order_id')
-      .eq('bordereau_id', id)
-    if (links && links.length > 0) {
-      const orderIds = links.map((l: any) => l.order_id)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('orders') as any)
-        .update({ status: orderStatus, updated_at: new Date().toISOString() })
-        .in('id', orderIds)
-    }
-  }
-  return true
-}
-
-export async function adminAssignOrdersToBordereau(bordereauId: string, orderIds: string[]): Promise<boolean> {
-  const rows = orderIds.map(order_id => ({ bordereau_id: bordereauId, order_id }))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('bordereau_orders') as any)
-    .upsert(rows, { onConflict: 'bordereau_id,order_id' })
   return !error
 }
 
@@ -406,7 +351,6 @@ export const ALL_PERMISSIONS = [
   { key: 'commandes', label: 'Commandes' },
   { key: 'produits', label: 'Produits' },
   { key: 'cycles', label: 'Cycles' },
-  { key: 'bordereaux', label: 'Bordereaux' },
   { key: 'douane', label: 'Douane' },
   { key: 'clients', label: 'Clients' },
   { key: 'sans_compte', label: 'Achat sans compte' },

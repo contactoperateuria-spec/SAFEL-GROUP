@@ -12,7 +12,6 @@ const ACTION_COLOR: Record<string, string> = {
   douane: '#FBB924',
   customs: '#FBB924',
   cycle: '#C084FC',
-  bordereau: '#67E8F9',
   settings: '#FB923C',
   create: '#4ADE80',
   update: '#93C5FD',

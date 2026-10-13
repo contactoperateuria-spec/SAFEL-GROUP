@@ -5,7 +5,6 @@ import AdminDashboard from './admin/AdminDashboard'
 import AdminCommandes from './admin/AdminCommandes'
 import AdminProduits from './admin/AdminProduits'
 import AdminCycles from './admin/AdminCycles'
-import AdminBordereaux from './admin/AdminBordereaux'
 import AdminDouane from './admin/AdminDouane'
 import AdminClients from './admin/AdminClients'
 import AdminSansCompte from './admin/AdminSansCompte'
@@ -13,14 +12,13 @@ import AdminArchives from './admin/AdminArchives'
 import AdminJournal from './admin/AdminJournal'
 import AdminParametres from './admin/AdminParametres'
 
-type Section = 'dashboard' | 'commandes' | 'produits' | 'cycles' | 'bordereaux' | 'douane' | 'clients' | 'sanscompte' | 'archives' | 'journal' | 'parametres'
+type Section = 'dashboard' | 'commandes' | 'produits' | 'cycles' | 'douane' | 'clients' | 'sanscompte' | 'archives' | 'journal' | 'parametres'
 
 const MENU: { key: Section; icon: string; label: string }[] = [
   { key: 'dashboard', icon: '📊', label: 'Tableau de bord' },
   { key: 'commandes', icon: '📦', label: 'Commandes' },
   { key: 'produits', icon: '🛍️', label: 'Produits' },
   { key: 'cycles', icon: '📅', label: 'Cycles' },
-  { key: 'bordereaux', icon: '🚢', label: 'Bordereaux' },
   { key: 'douane', icon: '🏛️', label: 'Douane' },
   { key: 'clients', icon: '👥', label: 'Clients' },
   { key: 'sanscompte', icon: '🧾', label: 'Achat sans compte' },
@@ -34,7 +32,6 @@ const SECTIONS: Record<Section, React.ReactNode> = {
   commandes: <AdminCommandes />,
   produits: <AdminProduits />,
   cycles: <AdminCycles />,
-  bordereaux: <AdminBordereaux />,
   douane: <AdminDouane />,
   clients: <AdminClients />,
   sanscompte: <AdminSansCompte />,
