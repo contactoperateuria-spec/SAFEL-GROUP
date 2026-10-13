@@ -32,6 +32,7 @@ export default function CouponPage() {
   const [orderSaved, setOrderSaved] = useState(false)
   const [orderRef, setOrderRef] = useState(DEMO_ORDER.ref)
   const [cycleId, setCycleId] = useState<string | null>(null)
+  const [cycleName, setCycleName] = useState(DEMO_ORDER.cycle)
 
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
@@ -50,7 +51,7 @@ export default function CouponPage() {
   const total = hasCartItems ? cartTotal : DEMO_ORDER.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)
 
   useEffect(() => {
-    getActiveCycle().then(c => { if (c) setCycleId(c.id) }).catch(() => {})
+    getActiveCycle().then(c => { if (c) { setCycleId(c.id); setCycleName(c.name) } }).catch(() => {})
     getUser().then(async user => {
       if (user) {
         setIsLoggedIn(true)
@@ -73,27 +74,30 @@ export default function CouponPage() {
       setSaveError('Merci de renseigner votre nom et téléphone.')
       return
     }
+    if (!cycleId) {
+      setSaveError('Aucun cycle de précommande actif en ce moment. Contactez SAFEL GROUP sur WhatsApp.')
+      return
+    }
     setSaving(true)
     setSaveError('')
     try {
-      if (hasCartItems && cycleId) {
-        const order = await createOrder({
-          cycle_id: cycleId,
-          customer_name: clientName.trim(),
-          customer_phone: clientPhone.trim(),
-          items: cartItems.map(i => ({ product_id: i.product_id, quantity: i.quantity, color: i.color, unit_price: i.price })),
-          total_amount: cartTotal,
-        })
-        if (order) {
-          setOrderRef((order as { reference?: string; id: string }).reference ?? order.id)
-          clearCart()
-          setOrderSaved(true)
-        }
+      const order = await createOrder({
+        cycle_id: cycleId,
+        customer_name: clientName.trim(),
+        customer_phone: clientPhone.trim(),
+        items: cartItems.map(i => ({ product_id: i.product_id, quantity: i.quantity, color: i.color, unit_price: i.price })),
+        total_amount: cartTotal,
+      })
+      if (order) {
+        setOrderRef((order as { reference?: string; id: string }).reference ?? order.id)
+        clearCart()
+        setOrderSaved(true)
+        setFormDone(true)
+      } else {
+        setSaveError('Erreur lors de l\'enregistrement de la commande. Réessayez ou contactez-nous.')
       }
-      setFormDone(true)
     } catch {
-      setSaveError('Erreur lors de l\'enregistrement. Continuez quand même.')
-      setFormDone(true)
+      setSaveError('Erreur de connexion. Vérifiez votre internet et réessayez.')
     } finally {
       setSaving(false)
     }
@@ -118,7 +122,7 @@ export default function CouponPage() {
         items: displayItems.map(i => ({ name: i.name, qty: i.qty, unitPrice: i.unitPrice, color: i.variant })),
         totalMarchandises: total,
         fraisDouane: 0,
-        cycle: 'Octobre 2025',
+        cycle: cycleName,
         date: today,
       })
       downloadPDF(bytes, `coupon-${displayRef}.pdf`)
@@ -177,7 +181,7 @@ export default function CouponPage() {
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{displayRef}</div>
               <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Émis le {today}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Cycle : Octobre 2025</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Cycle : {cycleName}</div>
             </div>
           </div>
 
