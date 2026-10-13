@@ -22,55 +22,32 @@ function SkeletonCard() {
 }
 
 export default function CataloguePage() {
-  const [products, setProducts] = useState<DisplayProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [categorie, setCategorie] = useState('Toutes catégories')
   const [tri, setTri] = useState('Pertinence')
   const [vue, setVue] = useState<'grid' | 'list'>('grid')
 
+  const [allProducts, setAllProducts] = useState<DisplayProduct[]>([])
+
   useEffect(() => {
     getProducts().then(data => {
-      if (data.length > 0) {
-        setProducts(data.map(toDisplayProduct))
-      } else {
-        setProducts(DEMO_PRODUCTS)
-      }
+      const list = data.length > 0 ? data.map(toDisplayProduct) : DEMO_PRODUCTS
+      setAllProducts(list)
       setLoading(false)
     }).catch(() => {
-      setProducts(DEMO_PRODUCTS)
+      setAllProducts(DEMO_PRODUCTS)
       setLoading(false)
     })
   }, [])
 
-  useEffect(() => {
-    if (!search && categorie === 'Toutes catégories') return
-    setLoading(true)
-    const filters = {
-      category: categorie !== 'Toutes catégories' ? categorie : undefined,
-      search: search || undefined,
-    }
-    getProducts(filters).then(data => {
-      if (data.length > 0) {
-        setProducts(data.map(toDisplayProduct))
-      } else {
-        const fallback = DEMO_PRODUCTS.filter(p => {
-          const matchSearch = p.name.toLowerCase().includes(search.toLowerCase())
-          const matchCat = categorie === 'Toutes catégories' || p.category === categorie
-          return matchSearch && matchCat
-        })
-        setProducts(fallback)
-      }
-      setLoading(false)
-    }).catch(() => {
-      setLoading(false)
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, categorie])
-
-  let displayed = [...products]
-  if (tri === 'Prix croissant') displayed = displayed.sort((a, b) => a.price - b.price)
-  if (tri === 'Prix décroissant') displayed = displayed.sort((a, b) => b.price - a.price)
+  let displayed = allProducts.filter(p => {
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
+    const matchCat = categorie === 'Toutes catégories' || p.category === categorie
+    return matchSearch && matchCat
+  })
+  if (tri === 'Prix croissant') displayed = [...displayed].sort((a, b) => a.price - b.price)
+  if (tri === 'Prix décroissant') displayed = [...displayed].sort((a, b) => b.price - a.price)
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 40 }}>
