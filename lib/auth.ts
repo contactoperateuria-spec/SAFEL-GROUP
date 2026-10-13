@@ -15,12 +15,12 @@ export async function signIn(email: string, password: string): Promise<{ error: 
 }
 
 export async function signUp(email: string, password: string, name: string, phone: string): Promise<{ error: string | null }> {
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name, phone } },
+  })
   if (error) return { error: error.message }
-  if (data.user) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('profiles') as any).insert({ id: data.user.id, name, phone })
-  }
   return { error: null }
 }
 
@@ -36,5 +36,14 @@ export async function getUser(): Promise<User | null> {
 export async function getProfile(userId: string): Promise<Profile | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase.from('profiles') as any).select('*').eq('id', userId).single()
-  return data ?? null
+  if (data) return data
+
+  // Profil absent (RLS a bloqué l'insert à l'inscription) — on le crée depuis les métadonnées
+  const { data: userData } = await supabase.auth.getUser()
+  const meta = userData?.user?.user_metadata ?? {}
+  const name = (meta.name as string) ?? ''
+  const phone = (meta.phone as string) ?? ''
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('profiles') as any).upsert({ id: userId, name, phone })
+  return { id: userId, name, phone }
 }
