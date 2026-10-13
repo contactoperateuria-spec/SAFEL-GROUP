@@ -81,8 +81,8 @@ export async function createOrder(order: {
 export async function getOrderByRef(ref: string): Promise<Order | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase.from('orders') as any)
-    .select('*, order_items(*, products(name))')
-    .eq('reference', ref)
+    .select('*, order_items(id, quantity, color, unit_price_cfa, products(name, images)), cycles(name)')
+    .eq('reference', ref.toUpperCase().trim())
     .single()
   return data
 }
