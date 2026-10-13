@@ -126,6 +126,7 @@ export default function AdminProduits() {
       sizeInput: '',
       stock: String(p.stock ?? 0),
       is_active: p.is_active ?? true,
+      is_draft: p.is_draft ?? false,
       customs_fee_cfa: String(p.customs_fee_cfa ?? 0),
     })
     setImageFile(null)
