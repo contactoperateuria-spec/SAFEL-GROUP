@@ -41,14 +41,18 @@ export default function CouponPage() {
   const [saveError, setSaveError] = useState('')
   const [authChecked, setAuthChecked] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [confirmedItems, setConfirmedItems] = useState<typeof DEMO_ORDER.items | null>(null)
+  const [confirmedTotal, setConfirmedTotal] = useState<number | null>(null)
 
   const hasCartItems = cartItems.length > 0
 
-  const displayItems = hasCartItems
-    ? cartItems.map(i => ({ emoji: i.emoji, bg: i.bg, name: i.name, variant: i.color ?? '', qty: i.quantity, unitPrice: i.price }))
-    : DEMO_ORDER.items
+  const displayItems = confirmedItems
+    ?? (hasCartItems
+      ? cartItems.map(i => ({ emoji: i.emoji, bg: i.bg, name: i.name, variant: [i.color, i.size].filter(Boolean).join(' · '), qty: i.quantity, unitPrice: i.price }))
+      : DEMO_ORDER.items)
 
-  const total = hasCartItems ? cartTotal : DEMO_ORDER.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)
+  const total = confirmedTotal
+    ?? (hasCartItems ? cartTotal : DEMO_ORDER.items.reduce((s, i) => s + i.qty * i.unitPrice, 0))
 
   useEffect(() => {
     getActiveCycle().then(c => { if (c) { setCycleId(c.id); setCycleName(c.name) } }).catch(() => {})
@@ -85,11 +89,13 @@ export default function CouponPage() {
         cycle_id: cycleId,
         customer_name: clientName.trim(),
         customer_phone: clientPhone.trim(),
-        items: cartItems.map(i => ({ product_id: i.product_id, quantity: i.quantity, color: i.color, unit_price: i.price })),
+        items: cartItems.map(i => ({ product_id: i.product_id, quantity: i.quantity, color: i.color ?? i.size, unit_price: i.price })),
         total_amount: cartTotal,
       })
       if (order) {
         setOrderRef((order as { reference?: string; id: string }).reference ?? order.id)
+        setConfirmedItems(cartItems.map(i => ({ emoji: i.emoji, bg: i.bg, name: i.name, variant: [i.color, i.size].filter(Boolean).join(' · '), qty: i.quantity, unitPrice: i.price })))
+        setConfirmedTotal(cartTotal)
         clearCart()
         setOrderSaved(true)
         setFormDone(true)
