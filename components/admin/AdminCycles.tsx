@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle } from '@/lib/db'
+import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle, adminLogActivity } from '@/lib/db'
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'OUVERT', closed: 'FERMÉ', in_transit: 'EN TRANSIT',
@@ -35,8 +35,15 @@ export default function AdminCycles() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     setUpdating(id)
+    const cycle = cycles.find(c => c.id === id)
     const ok = await adminUpdateCycleStatus(id, newStatus)
-    if (ok) setCycles(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c))
+    if (ok) {
+      setCycles(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c))
+      adminLogActivity('cycle', 'cycles', id, {
+        message: `Cycle "${cycle?.name ?? id.slice(0, 8)}" → ${STATUS_LABEL[newStatus] ?? newStatus}`,
+        from: cycle?.status, to: newStatus, name: cycle?.name,
+      })
+    }
     setUpdating(null)
   }
 
@@ -45,6 +52,10 @@ export default function AdminCycles() {
     setSaving(true)
     const ok = await adminCreateCycle(form.name, form.closedAt)
     if (ok) {
+      adminLogActivity('create', 'cycles', undefined, {
+        message: `Nouveau cycle créé : "${form.name}" — clôture le ${new Date(form.closedAt).toLocaleDateString('fr-FR')}`,
+        name: form.name, closed_at: form.closedAt,
+      })
       const updated = await adminGetCycles()
       setCycles(updated)
       setForm({ name: '', closedAt: '' })

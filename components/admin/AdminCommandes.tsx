@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { adminGetOrders, adminUpdateOrderStatus, adminUpdateProduct } from '@/lib/db'
+import { adminGetOrders, adminUpdateOrderStatus, adminUpdateProduct, adminLogActivity } from '@/lib/db'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
@@ -58,8 +58,15 @@ export default function AdminCommandes() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     setUpdating(id)
+    const order = orders.find(o => o.id === id)
     const ok = await adminUpdateOrderStatus(id, newStatus)
-    if (ok) setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+    if (ok) {
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+      adminLogActivity('status', 'orders', id, {
+        message: `Commande ${order?.reference ?? id.slice(0, 8)} → ${STATUS_LABEL[newStatus] ?? newStatus}`,
+        from: order?.status, to: newStatus, reference: order?.reference,
+      })
+    }
     setUpdating(null)
   }
 
@@ -71,7 +78,6 @@ export default function AdminCommandes() {
     setSavingFee(productId)
     const ok = await adminUpdateProduct(productId, { customs_fee_cfa: fee })
     if (ok) {
-      // Met à jour le fee dans tous les order_items qui contiennent ce produit
       setOrders(prev => prev.map(o => ({
         ...o,
         order_items: (o.order_items ?? []).map((item: any) =>
@@ -80,6 +86,11 @@ export default function AdminCommandes() {
             : item
         )
       })))
+      const productName = orders.flatMap(o => o.order_items ?? []).find((i: any) => i.products?.id === productId)?.products?.name
+      adminLogActivity('douane', 'products', productId, {
+        message: `Frais douane "${productName ?? productId.slice(0, 8)}" : ${fee.toLocaleString('fr-FR')} FCFA/u`,
+        fee_cfa: fee,
+      })
     }
     setSavingFee(null)
   }

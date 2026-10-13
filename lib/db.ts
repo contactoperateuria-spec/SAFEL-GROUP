@@ -304,7 +304,7 @@ export async function adminGetActivityLog(): Promise<any[]> {
   const { data } = await (supabase.from('activity_log') as any)
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(500)
   return data ?? []
 }
 

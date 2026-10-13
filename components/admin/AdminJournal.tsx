@@ -47,15 +47,43 @@ export default function AdminJournal() {
 
   const filtered = filter === 'Toutes les opérations' ? logs : logs.filter(l => l.entity_type?.toLowerCase() === filter.toLowerCase() || l.action?.toLowerCase() === filter.toLowerCase())
 
-  const FILTERS = ['Toutes les opérations', 'orders', 'products', 'cycles', 'bordereaux', 'settings']
+  const FILTERS = ['Toutes les opérations', 'orders', 'products', 'cycles', 'settings']
+
+  const handleExportCSV = () => {
+    const rows = [
+      ['Date', 'Heure', 'Type', 'Action', 'Description'],
+      ...logs.map(l => {
+        const d = new Date(l.created_at)
+        const date = d.toLocaleDateString('fr-FR')
+        const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        const type = l.entity_type ?? ''
+        const action = l.action ?? ''
+        const msg = l.details?.message ?? `${action} · ${type}${l.entity_id ? ` #${l.entity_id.slice(0, 8)}` : ''}`
+        return [date, time, type, action, msg]
+      }),
+    ]
+    const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `journal-safel-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>Journal d&apos;opérations</div>
-        <select value={filter} onChange={e => setFilter(e.target.value)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 11, padding: '5px 10px', outline: 'none' }}>
-          {FILTERS.map(f => <option key={f}>{f}</option>)}
-        </select>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>Journal d&apos;opérations ({logs.length})</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select value={filter} onChange={e => setFilter(e.target.value)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 11, padding: '5px 10px', outline: 'none' }}>
+            {FILTERS.map(f => <option key={f}>{f}</option>)}
+          </select>
+          <button onClick={handleExportCSV} disabled={logs.length === 0} style={{ background: 'rgba(74,222,128,.15)', border: '1px solid rgba(74,222,128,.3)', color: '#4ADE80', borderRadius: 4, fontSize: 11, fontWeight: 600, padding: '5px 12px', cursor: logs.length === 0 ? 'not-allowed' : 'pointer', opacity: logs.length === 0 ? .4 : 1, whiteSpace: 'nowrap' }}>
+            ⬇ Export CSV
+          </button>
+        </div>
       </div>
 
       {loading ? (

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { adminGetProducts, adminCreateProduct, adminArchiveProduct, adminUpdateProduct, uploadProductImage } from '@/lib/db'
+import { adminGetProducts, adminCreateProduct, adminArchiveProduct, adminUpdateProduct, uploadProductImage, adminLogActivity } from '@/lib/db'
 import type { Product } from '@/lib/types'
 import { toDisplayProduct } from '@/lib/displayHelpers'
 
@@ -90,6 +90,10 @@ export default function AdminProduits() {
     })
     setSaving(false)
     if (result) {
+      adminLogActivity('create', 'products', result.id, {
+        message: `Produit créé : "${result.name}" — ${(result.price_cfa ?? 0).toLocaleString('fr-FR')} FCFA`,
+        name: result.name, price_cfa: result.price_cfa,
+      })
       setFeedback({ type: 'ok', msg: `✅ "${result.name}" ajouté au catalogue.` })
       setForm(EMPTY_FORM)
       setImageFile(null)
@@ -156,6 +160,10 @@ export default function AdminProduits() {
     })
     setSaving(false)
     if (ok) {
+      adminLogActivity('update', 'products', editingProduct.id, {
+        message: `Produit modifié : "${form.name}" — ${(parseInt(form.price_cfa) || 0).toLocaleString('fr-FR')} FCFA`,
+        name: form.name, price_cfa: parseInt(form.price_cfa) || 0,
+      })
       setFeedback({ type: 'ok', msg: `✅ "${form.name}" mis à jour.` })
       setEditingProduct(null)
       setForm(EMPTY_FORM)
@@ -172,6 +180,10 @@ export default function AdminProduits() {
   const handleArchive = async (id: string, name: string) => {
     if (!confirm(`Archiver "${name}" ? Il ne sera plus visible dans le catalogue.`)) return
     await adminArchiveProduct(id)
+    adminLogActivity('delete', 'products', id, {
+      message: `Produit archivé : "${name}"`,
+      name,
+    })
     load()
   }
 
