@@ -36,6 +36,7 @@ export default function AdminCommandes() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('Tous statuts')
+  const [cycleFilter, setCycleFilter] = useState('Tous cycles')
   const [updating, setUpdating] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   // customsFeeInput keyed by product_id
@@ -46,10 +47,13 @@ export default function AdminCommandes() {
     adminGetOrders().then(data => { setOrders(data); setLoading(false) })
   }, [])
 
+  const cycles = Array.from(new Set(orders.map(o => o.cycles?.name).filter(Boolean))) as string[]
+
   const filtered = orders.filter(o => {
     const matchSearch = !search || o.customer_name?.toLowerCase().includes(search.toLowerCase()) || o.customer_phone?.includes(search) || o.reference?.toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'Tous statuts' || STATUS_LABEL[o.status] === statusFilter
-    return matchSearch && matchStatus
+    const matchCycle = cycleFilter === 'Tous cycles' || o.cycles?.name === cycleFilter
+    return matchSearch && matchStatus && matchCycle
   })
 
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -96,6 +100,10 @@ export default function AdminCommandes() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}>
           {FILTER_OPTIONS.map(s => <option key={s}>{s}</option>)}
         </select>
+        <select value={cycleFilter} onChange={e => setCycleFilter(e.target.value)} style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.7)', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none' }}>
+          <option value="Tous cycles">Tous cycles</option>
+          {cycles.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       {loading ? (
@@ -113,6 +121,7 @@ export default function AdminCommandes() {
                   <span>
                     <div style={{ fontWeight: 600, fontSize: 11 }}>{o.reference ?? '—'}</div>
                     <div style={{ fontSize: 10, opacity: .4 }}>{new Date(o.created_at).toLocaleDateString('fr-FR')}</div>
+                    {o.cycles?.name && <div style={{ fontSize: 10, color: 'rgba(99,179,237,.7)', marginTop: 2 }}>{o.cycles.name}</div>}
                   </span>
                   <span>
                     <div>{o.customer_name}</div>
