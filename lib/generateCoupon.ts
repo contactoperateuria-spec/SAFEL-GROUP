@@ -120,12 +120,12 @@ export async function generateCouponPDF(data: CouponData): Promise<Uint8Array> {
 
   page.drawText('Total marchandises', { x: 360, y, size: 10, font: helvetica, color: gray })
   page.drawText(fmt(data.totalMarchandises), { x: 490, y, size: 10, font: helveticaBold, color: dark })
-  y -= 16
+  y -= 26
 
   if (data.fraisDouane > 0) {
     page.drawText('Frais de douane', { x: 360, y, size: 10, font: helvetica, color: gray })
     page.drawText(fmt(data.fraisDouane), { x: 490, y, size: 10, font: helveticaBold, color: dark })
-    y -= 16
+    y -= 26
   }
 
   page.drawRectangle({ x: 340, y: y - 8, width: W - 380, height: 26, color: orange })
