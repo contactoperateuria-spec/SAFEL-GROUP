@@ -32,6 +32,7 @@ export default function AdminBordereaux() {
   const [selectedBl, setSelectedBl] = useState<string | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [assigning, setAssigning] = useState(false)
+  const [orderSearch, setOrderSearch] = useState('')
 
   useEffect(() => {
     Promise.all([adminGetBordereaux(), adminGetCycles(), adminGetOrders()]).then(([bl, cy, ord]) => {
@@ -39,9 +40,11 @@ export default function AdminBordereaux() {
     })
   }, [])
 
-  const ordersWithoutBl = orders.filter(o =>
-    (o.status === 'paid' || o.status === 'confirmed') && !o.bordereau_orders?.length
-  )
+  const filteredOrders = orders.filter(o => {
+    if (!orderSearch) return true
+    const q = orderSearch.toLowerCase()
+    return (o.reference ?? '').toLowerCase().includes(q) || (o.customer_name ?? '').toLowerCase().includes(q)
+  })
 
   const handleCreate = async () => {
     if (!form.number || !form.cycleId) return
@@ -144,17 +147,36 @@ export default function AdminBordereaux() {
             </select>
             {selectedBl && (
               <>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6 }}>Commandes payées/confirmées sans bordereau :</div>
-                {ordersWithoutBl.length === 0 ? (
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '8px 0' }}>Aucune commande disponible</div>
+                <input
+                  value={orderSearch}
+                  onChange={e => setOrderSearch(e.target.value)}
+                  placeholder="Rechercher par référence ou client…"
+                  style={{ width: '100%', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#fff', borderRadius: 4, fontSize: 12, padding: '6px 10px', outline: 'none', boxSizing: 'border-box', marginBottom: 6 }}
+                />
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6 }}>
+                  {filteredOrders.length} commande(s) — cochez celles à associer à ce bordereau
+                </div>
+                {orders.length === 0 ? (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '8px 0' }}>Aucune commande</div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-                    {ordersWithoutBl.map(o => (
-                      <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,.7)', padding: '4px 8px', background: selectedOrders.includes(o.id) ? 'rgba(232,114,12,.08)' : 'transparent', borderRadius: 4 }}>
-                        <input type="checkbox" checked={selectedOrders.includes(o.id)} onChange={() => toggleOrder(o.id)} />
-                        <span>{o.reference ?? '—'} · {o.customer_name} · {(o.total_cfa ?? 0).toLocaleString('fr-FR')} FCFA</span>
-                      </label>
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 8, maxHeight: 260, overflowY: 'auto', paddingRight: 4 }}>
+                    {filteredOrders.map(o => {
+                      const existingBl = o.bordereau_orders?.[0]?.bordereaux?.number
+                      return (
+                        <label key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,.75)', padding: '5px 8px', background: selectedOrders.includes(o.id) ? 'rgba(232,114,12,.1)' : 'rgba(255,255,255,.02)', borderRadius: 4, border: selectedOrders.includes(o.id) ? '1px solid rgba(232,114,12,.3)' : '1px solid transparent' }}>
+                          <input type="checkbox" checked={selectedOrders.includes(o.id)} onChange={() => toggleOrder(o.id)} style={{ flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>
+                            <span style={{ fontWeight: 600, color: '#fff' }}>{o.reference ?? '—'}</span>
+                            <span style={{ color: 'rgba(255,255,255,.5)' }}> · {o.customer_name}</span>
+                            <span style={{ color: 'rgba(255,255,255,.4)' }}> · {(o.total_cfa ?? 0).toLocaleString('fr-FR')} FCFA</span>
+                          </span>
+                          {existingBl && (
+                            <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: 'rgba(147,197,253,.15)', color: '#93C5FD', flexShrink: 0 }}>BL: {existingBl}</span>
+                          )}
+                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 3, background: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.4)', flexShrink: 0 }}>{o.status}</span>
+                        </label>
+                      )
+                    })}
                   </div>
                 )}
                 <button disabled={!selectedOrders.length || assigning} onClick={handleAssign} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (!selectedOrders.length || assigning) ? .5 : 1 }}>
