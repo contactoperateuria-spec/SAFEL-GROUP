@@ -58,7 +58,7 @@ export default function AdminShell() {
 
   const handleLogout = async () => {
     await fetch('/api/admin/auth', { method: 'DELETE' })
-    router.push('/admin/login')
+    window.location.href = '/admin/login'
   }
 
   const menu = ALL_MENU.filter(item => {

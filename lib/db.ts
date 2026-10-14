@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, supabaseAdmin } from './supabase'
 import type { Product, Cycle, Order } from './types'
 
 export async function getActiveCycle(): Promise<Cycle | null> {
@@ -92,9 +92,9 @@ export async function getOrderByRef(ref: string): Promise<Order | null> {
 export async function uploadProductImage(file: File): Promise<string | null> {
   const ext = file.name.split('.').pop()
   const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-  const { error } = await supabase.storage.from('product-images').upload(path, file, { upsert: false })
+  const { error } = await supabaseAdmin.storage.from('product-images').upload(path, file, { upsert: false })
   if (error) { console.error('uploadProductImage:', error.message); return null }
-  const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+  const { data } = supabaseAdmin.storage.from('product-images').getPublicUrl(path)
   return data.publicUrl
 }
 
@@ -102,7 +102,7 @@ export async function uploadProductImage(file: File): Promise<string | null> {
 
 export async function adminGetProducts(): Promise<Product[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('products') as any)
+  const { data } = await (supabaseAdmin.from('products') as any)
     .select('*')
     .eq('is_active', true)
     .eq('is_draft', false)
@@ -112,7 +112,7 @@ export async function adminGetProducts(): Promise<Product[]> {
 
 export async function adminGetDraftProducts(): Promise<Product[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('products') as any)
+  const { data } = await (supabaseAdmin.from('products') as any)
     .select('*')
     .eq('is_draft', true)
     .order('created_at', { ascending: false })
@@ -121,7 +121,7 @@ export async function adminGetDraftProducts(): Promise<Product[]> {
 
 export async function adminActivateDraftProducts(): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('products') as any)
+  const { error } = await (supabaseAdmin.from('products') as any)
     .update({ is_active: true, is_draft: false })
     .eq('is_draft', true)
   return !error
@@ -129,7 +129,7 @@ export async function adminActivateDraftProducts(): Promise<boolean> {
 
 export async function adminArchiveActiveProducts(): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('products') as any)
+  const { error } = await (supabaseAdmin.from('products') as any)
     .update({ is_active: false })
     .eq('is_active', true)
     .eq('is_draft', false)
@@ -151,7 +151,7 @@ export async function adminCreateProduct(product: {
   images?: string[]
 }): Promise<Product | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('products') as any)
+  const { data, error } = await (supabaseAdmin.from('products') as any)
     .insert({ ...product, images: product.images ?? [] })
     .select()
     .single()
@@ -161,7 +161,7 @@ export async function adminCreateProduct(product: {
 
 export async function adminUpdateProduct(id: string, updates: Partial<Product>): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('products') as any)
+  const { error } = await (supabaseAdmin.from('products') as any)
     .update(updates)
     .eq('id', id)
   return !error
@@ -173,7 +173,7 @@ export async function adminArchiveProduct(id: string): Promise<boolean> {
 
 export async function adminCreateCycle(name: string, closedAt: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('cycles') as any)
+  const { error } = await (supabaseAdmin.from('cycles') as any)
     .insert({ name, status: 'open', closed_at: closedAt })
   return !error
 }
@@ -182,7 +182,7 @@ export async function adminCreateCycle(name: string, closedAt: string): Promise<
 
 export async function adminGetOrders(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('orders') as any)
+  const { data } = await (supabaseAdmin.from('orders') as any)
     .select('*, order_items(id, quantity, color, unit_price_cfa, products(id, name, images, customs_fee_cfa)), cycles(name)')
     .order('created_at', { ascending: false })
   return data ?? []
@@ -190,7 +190,7 @@ export async function adminGetOrders(): Promise<any[]> {
 
 export async function adminUpdateOrderStatus(id: string, status: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('orders') as any)
+  const { error } = await (supabaseAdmin.from('orders') as any)
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
   return !error
@@ -198,7 +198,7 @@ export async function adminUpdateOrderStatus(id: string, status: string): Promis
 
 export async function adminUpdateOrderCustomsFee(id: string, fee: number): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('orders') as any)
+  const { error } = await (supabaseAdmin.from('orders') as any)
     .update({ customs_fee_cfa: fee, updated_at: new Date().toISOString() })
     .eq('id', id)
   return !error
@@ -206,7 +206,7 @@ export async function adminUpdateOrderCustomsFee(id: string, fee: number): Promi
 
 export async function adminGetCycles(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('cycles') as any)
+  const { data } = await (supabaseAdmin.from('cycles') as any)
     .select('*')
     .order('created_at', { ascending: false })
   return data ?? []
@@ -214,7 +214,7 @@ export async function adminGetCycles(): Promise<any[]> {
 
 export async function adminUpdateCycleStatus(id: string, status: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('cycles') as any)
+  const { error } = await (supabaseAdmin.from('cycles') as any)
     .update({ status })
     .eq('id', id)
   return !error
@@ -222,7 +222,7 @@ export async function adminUpdateCycleStatus(id: string, status: string): Promis
 
 export async function adminGetClients(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('orders') as any)
+  const { data } = await (supabaseAdmin.from('orders') as any)
     .select('customer_name, customer_phone, customer_email, total_cfa, created_at')
     .order('created_at', { ascending: false })
   if (!data) return []
@@ -250,7 +250,7 @@ export async function adminCreateGuestOrder(data: {
     : String(Math.floor(Math.random() * 900000) + 100000)
   const ref = `SG-${new Date().getFullYear()}-${rand}`
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: newOrder, error } = await (supabase.from('orders') as any)
+  const { data: newOrder, error } = await (supabaseAdmin.from('orders') as any)
     .insert({
       cycle_id: data.cycle_id,
       reference: ref,
@@ -264,7 +264,7 @@ export async function adminCreateGuestOrder(data: {
     .single()
   if (error || !newOrder) return null
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('order_items') as any).insert(
+  await (supabaseAdmin.from('order_items') as any).insert(
     data.items.map(i => ({
       order_id: newOrder.id,
       product_id: i.product_id,
@@ -278,25 +278,25 @@ export async function adminCreateGuestOrder(data: {
 
 export async function adminDeleteOrder(id: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('orders') as any).delete().eq('id', id)
+  const { error } = await (supabaseAdmin.from('orders') as any).delete().eq('id', id)
   return !error
 }
 
 export async function adminDeleteProduct(id: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('products') as any).delete().eq('id', id)
+  const { error } = await (supabaseAdmin.from('products') as any).delete().eq('id', id)
   return !error
 }
 
 export async function adminDeleteCycle(id: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('cycles') as any).delete().eq('id', id)
+  const { error } = await (supabaseAdmin.from('cycles') as any).delete().eq('id', id)
   return !error
 }
 
 export async function adminGetArchivedProducts(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('products') as any)
+  const { data } = await (supabaseAdmin.from('products') as any)
     .select('*')
     .eq('is_active', false)
     .order('created_at', { ascending: false })
@@ -305,7 +305,7 @@ export async function adminGetArchivedProducts(): Promise<any[]> {
 
 export async function adminGetActivityLog(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('activity_log') as any)
+  const { data } = await (supabaseAdmin.from('activity_log') as any)
     .select('*')
     .order('created_at', { ascending: false })
     .limit(500)
@@ -314,13 +314,13 @@ export async function adminGetActivityLog(): Promise<any[]> {
 
 export async function adminLogActivity(action: string, entityType: string, entityId?: string, details?: Record<string, unknown>): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('activity_log') as any)
+  await (supabaseAdmin.from('activity_log') as any)
     .insert({ action, entity_type: entityType, entity_id: entityId ?? null, details: details ?? null })
 }
 
 export async function adminGetSettings(): Promise<Record<string, unknown>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('shop_settings') as any)
+  const { data } = await (supabaseAdmin.from('shop_settings') as any)
     .select('key, value')
   if (!data) return {}
   const result: Record<string, unknown> = {}
@@ -330,7 +330,7 @@ export async function adminGetSettings(): Promise<Record<string, unknown>> {
 
 export async function adminUpdateSetting(key: string, value: unknown): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('shop_settings') as any)
+  const { error } = await (supabaseAdmin.from('shop_settings') as any)
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
   return !error
 }
@@ -361,7 +361,7 @@ export const ALL_PERMISSIONS = [
 
 export async function adminGetSubAdmins(): Promise<SubAdmin[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('admins') as any)
+  const { data } = await (supabaseAdmin.from('admins') as any)
     .select('*')
     .neq('role', 'super_admin')
     .order('created_at', { ascending: false })
@@ -375,7 +375,7 @@ export async function adminCreateSubAdmin(data: {
   permissions: Record<string, boolean>
 }): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('admins') as any)
+  const { error } = await (supabaseAdmin.from('admins') as any)
     .insert({ ...data, is_active: true })
   if (error) { console.error('adminCreateSubAdmin:', error.message) }
   return !error
@@ -383,7 +383,7 @@ export async function adminCreateSubAdmin(data: {
 
 export async function adminUpdateSubAdmin(id: string, updates: Partial<SubAdmin>): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('admins') as any)
+  const { error } = await (supabaseAdmin.from('admins') as any)
     .update(updates)
     .eq('id', id)
   return !error
@@ -395,7 +395,7 @@ export async function adminToggleSubAdmin(id: string, isActive: boolean): Promis
 
 export async function adminDeleteSubAdmin(id: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('admins') as any)
+  const { error } = await (supabaseAdmin.from('admins') as any)
     .delete()
     .eq('id', id)
   return !error
@@ -405,7 +405,7 @@ export async function adminGetDashboardStats(): Promise<{
   total: number; revenue: number; pending: number; paid: number; recent: any[]
 }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('orders') as any)
+  const { data } = await (supabaseAdmin.from('orders') as any)
     .select('id, status, total_cfa, reference, customer_name, customer_phone, created_at')
     .order('created_at', { ascending: false })
   if (!data) return { total: 0, revenue: 0, pending: 0, paid: 0, recent: [] }
