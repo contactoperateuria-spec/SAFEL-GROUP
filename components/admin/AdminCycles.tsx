@@ -83,7 +83,7 @@ export default function AdminCycles() {
     in_transit: 'En transit', in_customs: 'En douane', customs_cleared: 'Dédouanée',
     ready: 'Prête à retirer', delivered: 'Livrée', cancelled: 'Annulée', refunded: 'Remboursée',
   }
-  const ALL_ORDER_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered', 'cancelled', 'refunded']
+  const ALL_ORDER_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered']
 
   const toggleCycleOrders = async (cycleId: string) => {
     if (expandedCycle === cycleId) { setExpandedCycle(null); return }
