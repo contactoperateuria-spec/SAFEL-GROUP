@@ -8,10 +8,10 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
 
 // Client admin avec service_role — bypasse le RLS, à utiliser côté serveur uniquement
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!serviceRoleKey && process.env.NODE_ENV === 'production') {
+if (!serviceRoleKey && process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY est requis en production.')
 }
-if (!serviceRoleKey) {
+if (!serviceRoleKey && typeof window === 'undefined') {
   console.warn('[supabase] SUPABASE_SERVICE_ROLE_KEY absent — supabaseAdmin utilise la clé anon (dev uniquement)')
 }
 export const supabaseAdmin = serviceRoleKey
