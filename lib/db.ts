@@ -188,6 +188,15 @@ export async function adminGetOrders(): Promise<any[]> {
   return data ?? []
 }
 
+export async function adminGetOrdersByCycle(cycleId: string): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabaseAdmin.from('orders') as any)
+    .select('*, order_items(id, quantity, color, unit_price_cfa, products(id, name, images, customs_fee_cfa))')
+    .eq('cycle_id', cycleId)
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
 export async function adminUpdateOrderStatus(id: string, status: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabaseAdmin.from('orders') as any)
