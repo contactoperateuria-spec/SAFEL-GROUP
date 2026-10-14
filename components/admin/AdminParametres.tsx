@@ -88,20 +88,12 @@ export default function AdminParametres() {
     if (form.tempPassword.length < 6) { setFormError('Le mot de passe doit faire au moins 6 caractères.'); return }
     setFormSaving(true); setFormError('')
 
-    // Créer le compte Supabase Auth pour le sous-admin
-    const { error: authError } = await supabase.auth.signUp({ email: form.email, password: form.tempPassword })
-    if (authError && !authError.message.includes('already registered')) {
-      setFormError('Erreur création compte : ' + authError.message)
-      setFormSaving(false)
-      return
-    }
-
-    // Insérer dans la table admins via API route (service_role côté serveur)
+    // Créer le compte Auth + insérer dans admins via API route (service_role côté serveur)
     const { email, name, role, permissions } = form
     const res = await fetch('/api/admin/subadmins', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name, role, permissions }),
+      body: JSON.stringify({ email, name, role, permissions, password: form.tempPassword }),
     })
     if (!res.ok) { setFormError('Erreur lors de la création.'); setFormSaving(false); return }
 

@@ -38,8 +38,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   if (!await isAuthorized(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const body = await request.json()
-  const { email, name, role, permissions } = body
+  const { email, name, role, permissions, password } = body
   if (!email || !name || !role) return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
+
+  // Créer le compte Auth côté serveur (email confirmé automatiquement)
+  if (password) {
+    const { error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+    if (authError && !authError.message.includes('already been registered')) {
+      return NextResponse.json({ error: authError.message }, { status: 400 })
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabaseAdmin.from('admins') as any)
     .insert({ email, name, role, permissions, is_active: true })
