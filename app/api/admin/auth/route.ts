@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'safel2025'
 const COOKIE_VALUE = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   if (subadminCookie?.value) {
     const email = subadminCookie.value
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase.from('admins') as any)
+    const { data } = await (supabaseAdmin.from('admins') as any)
       .select('name, role, permissions')
       .eq('email', email)
       .eq('is_active', true)
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: admin } = await (supabase.from('admins') as any)
+    const { data: admin } = await (supabaseAdmin.from('admins') as any)
       .select('name, role, permissions')
       .eq('email', body.email)
       .eq('is_active', true)
