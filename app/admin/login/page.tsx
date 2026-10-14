@@ -13,6 +13,8 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showAdminPassword, setShowAdminPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -70,14 +72,19 @@ export default function AdminLoginPage() {
           {tab === 'super' ? (
             <div style={{ marginBottom: 14 }}>
               <label style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.05em' }}>Mot de passe admin</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoFocus
-                style={{ width: '100%', height: 44, background: 'rgba(255,255,255,.07)', border: `1.5px solid ${error ? 'rgba(239,68,68,.5)' : 'rgba(255,255,255,.12)'}`, borderRadius: 8, padding: '0 14px', fontSize: 16, color: '#fff', outline: 'none', boxSizing: 'border-box', letterSpacing: '0.1em' }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoFocus
+                  style={{ width: '100%', height: 44, background: 'rgba(255,255,255,.07)', border: `1.5px solid ${error ? 'rgba(239,68,68,.5)' : 'rgba(255,255,255,.12)'}`, borderRadius: 8, padding: '0 40px 0 14px', fontSize: 16, color: '#fff', outline: 'none', boxSizing: 'border-box', letterSpacing: showPassword ? 'normal' : '0.1em' }}
+                />
+                <button type="button" onClick={() => setShowPassword(v => !v)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'rgba(255,255,255,.4)', padding: 0, lineHeight: 1 }}>
+                  {showPassword ? '🙈' : '👁'}
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -94,13 +101,18 @@ export default function AdminLoginPage() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.05em' }}>Mot de passe</label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={e => setAdminPassword(e.target.value)}
-                  placeholder="••••••••"
-                  style={{ width: '100%', height: 44, background: 'rgba(255,255,255,.07)', border: `1.5px solid ${error ? 'rgba(239,68,68,.5)' : 'rgba(255,255,255,.12)'}`, borderRadius: 8, padding: '0 14px', fontSize: 16, color: '#fff', outline: 'none', boxSizing: 'border-box', letterSpacing: '0.1em' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showAdminPassword ? 'text' : 'password'}
+                    value={adminPassword}
+                    onChange={e => setAdminPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{ width: '100%', height: 44, background: 'rgba(255,255,255,.07)', border: `1.5px solid ${error ? 'rgba(239,68,68,.5)' : 'rgba(255,255,255,.12)'}`, borderRadius: 8, padding: '0 40px 0 14px', fontSize: 16, color: '#fff', outline: 'none', boxSizing: 'border-box', letterSpacing: showAdminPassword ? 'normal' : '0.1em' }}
+                  />
+                  <button type="button" onClick={() => setShowAdminPassword(v => !v)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'rgba(255,255,255,.4)', padding: 0, lineHeight: 1 }}>
+                    {showAdminPassword ? '🙈' : '👁'}
+                  </button>
+                </div>
               </div>
             </>
           )}
