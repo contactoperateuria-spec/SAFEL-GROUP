@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 
+if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_PASSWORD) {
+  throw new Error('ADMIN_PASSWORD est requis en production.')
+}
+if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SESSION_SECRET) {
+  throw new Error('ADMIN_SESSION_SECRET est requis en production.')
+}
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'safel2025'
 const COOKIE_VALUE = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
 const SUBADMIN_SECRET = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'

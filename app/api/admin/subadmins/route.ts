@@ -6,6 +6,13 @@ const COOKIE_VALUE = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
 const ADMIN_COOKIE = 'safel_admin_session'
 const SUBADMIN_COOKIE = 'safel_subadmin_session'
 
+function hasValidOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get('origin')
+  const host = request.headers.get('host')
+  if (!origin || !host) return true // requêtes server-side sans origin
+  try { return new URL(origin).host === host } catch { return false }
+}
+
 async function isAuthorized(request: NextRequest): Promise<boolean> {
   const adminCookie = request.cookies.get(ADMIN_COOKIE)
   const subadminCookie = request.cookies.get(SUBADMIN_COOKIE)
@@ -30,12 +37,13 @@ export async function GET(request: NextRequest) {
     .select('*')
     .neq('role', 'super_admin')
     .order('created_at', { ascending: false })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) { console.error('adminGetSubAdmins:', error.message); return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 }) }
   return NextResponse.json(data ?? [])
 }
 
 // POST — créer un sous-admin
 export async function POST(request: NextRequest) {
+  if (!hasValidOrigin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
   if (!await isAuthorized(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const body = await request.json()
   const { email, name, role, permissions, password } = body
@@ -49,7 +57,8 @@ export async function POST(request: NextRequest) {
       email_confirm: true,
     })
     if (authError && !authError.message.includes('already been registered')) {
-      return NextResponse.json({ error: authError.message }, { status: 400 })
+      console.error('adminCreateSubAdmin auth:', authError.message)
+      return NextResponse.json({ error: 'Erreur lors de la création du compte.' }, { status: 400 })
     }
   }
 
@@ -62,6 +71,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH — activer/désactiver ou modifier un sous-admin
 export async function PATCH(request: NextRequest) {
+  if (!hasValidOrigin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
   if (!await isAuthorized(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const body = await request.json()
   const { id, is_active, name, permissions } = body
@@ -86,6 +96,7 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE — supprimer un sous-admin
 export async function DELETE(request: NextRequest) {
+  if (!hasValidOrigin(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
   if (!await isAuthorized(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const { id } = await request.json()
   if (!id) return NextResponse.json({ error: 'ID manquant' }, { status: 400 })
