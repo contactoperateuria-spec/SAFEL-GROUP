@@ -1,10 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import {
-  adminGetSettings, adminUpdateSetting,
-  adminGetSubAdmins, adminCreateSubAdmin, adminToggleSubAdmin, adminDeleteSubAdmin,
-  ALL_PERMISSIONS, type SubAdmin,
-} from '@/lib/db'
+import { adminGetSettings, adminUpdateSetting, ALL_PERMISSIONS, type SubAdmin } from '@/lib/db'
 import { supabase } from '@/lib/supabase'
 
 const inputStyle: React.CSSProperties = {
@@ -69,7 +65,7 @@ export default function AdminParametres() {
   useEffect(() => {
     if (tab === 'equipe') {
       setAdminsLoading(true)
-      adminGetSubAdmins().then(data => { setAdmins(data); setAdminsLoading(false) })
+      fetch('/api/admin/subadmins').then(r => r.json()).then(data => { setAdmins(Array.isArray(data) ? data : []); setAdminsLoading(false) })
     }
   }, [tab])
 
@@ -100,27 +96,39 @@ export default function AdminParametres() {
       return
     }
 
-    // Insérer dans la table admins
+    // Insérer dans la table admins via API route (service_role côté serveur)
     const { email, name, role, permissions } = form
-    const ok = await adminCreateSubAdmin({ email, name, role, permissions })
-    if (!ok) { setFormError('Erreur lors de la création.'); setFormSaving(false); return }
+    const res = await fetch('/api/admin/subadmins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name, role, permissions }),
+    })
+    if (!res.ok) { setFormError('Erreur lors de la création.'); setFormSaving(false); return }
 
     setCreatedPassword(form.tempPassword)
     setShowForm(false)
     setForm({ email: '', name: '', role: 'admin', tempPassword: '', permissions: Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true])) })
-    const data = await adminGetSubAdmins()
-    setAdmins(data)
+    const data = await fetch('/api/admin/subadmins').then(r => r.json())
+    setAdmins(Array.isArray(data) ? data : [])
     setFormSaving(false)
   }
 
   const handleToggle = async (id: string, current: boolean) => {
-    await adminToggleSubAdmin(id, !current)
+    await fetch('/api/admin/subadmins', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, is_active: !current }),
+    })
     setAdmins(prev => prev.map(a => a.id === id ? { ...a, is_active: !current } : a))
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce sous-admin ?')) return
-    await adminDeleteSubAdmin(id)
+    await fetch('/api/admin/subadmins', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
     setAdmins(prev => prev.filter(a => a.id !== id))
   }
 
