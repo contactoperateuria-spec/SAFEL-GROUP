@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getProducts } from '@/lib/db'
 import { toDisplayProduct, DEMO_PRODUCTS, type DisplayProduct } from '@/lib/displayHelpers'
@@ -21,10 +22,11 @@ function SkeletonCard() {
   )
 }
 
-export default function CataloguePage() {
+function CatalogueContent() {
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [categorie, setCategorie] = useState('Toutes catégories')
+  const [categorie, setCategorie] = useState(() => searchParams.get('categorie') ?? 'Toutes catégories')
   const [tri, setTri] = useState('Pertinence')
   const [vue, setVue] = useState<'grid' | 'list'>('grid')
 
@@ -137,5 +139,13 @@ export default function CataloguePage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function CataloguePage() {
+  return (
+    <Suspense fallback={<div className="container" style={{ paddingTop: 32, color: 'var(--text-3)', fontSize: 13 }}>Chargement…</div>}>
+      <CatalogueContent />
+    </Suspense>
   )
 }
