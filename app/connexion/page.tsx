@@ -14,6 +14,8 @@ function ConnexionInner() {
   const [error, setError] = useState(hasError ? 'Le lien de confirmation a expiré. Reconnectez-vous.' : '')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
+  const [showPwdReg, setShowPwdReg] = useState(false)
 
   const update = (k: string, v: string | boolean) => setForm(prev => ({ ...prev, [k]: v }))
 
@@ -78,7 +80,10 @@ function ConnexionInner() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 5, color: 'var(--text-2)' }}>Mot de passe</label>
-                <input style={inputStyle} type="password" placeholder="Votre mot de passe" value={form.password} onChange={e => update('password', e.target.value)} />
+                <div style={{ position: 'relative' }}>
+                  <input style={{ ...inputStyle, paddingRight: 40 }} type={showPwd ? 'text' : 'password'} placeholder="Votre mot de passe" value={form.password} onChange={e => update('password', e.target.value)} />
+                  <button type="button" onClick={() => setShowPwd(v => !v)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-3)', padding: 0, lineHeight: 1 }}>{showPwd ? '🙈' : '👁'}</button>
+                </div>
               </div>
               {error && <div style={{ fontSize: 12, color: '#C62828', marginBottom: 12, padding: '8px 12px', background: '#FEE8E8', borderRadius: 6 }}>{error}</div>}
               <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', height: 44, borderRadius: 22, fontSize: 15, justifyContent: 'center', opacity: loading ? .7 : 1 }}>
@@ -110,7 +115,10 @@ function ConnexionInner() {
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 5, color: 'var(--text-2)' }}>Mot de passe * (min. 8 caractères)</label>
-                <input style={inputStyle} type="password" placeholder="Min. 8 caractères" value={form.password} onChange={e => update('password', e.target.value)} />
+                <div style={{ position: 'relative' }}>
+                  <input style={{ ...inputStyle, paddingRight: 40 }} type={showPwdReg ? 'text' : 'password'} placeholder="Min. 8 caractères" value={form.password} onChange={e => update('password', e.target.value)} />
+                  <button type="button" onClick={() => setShowPwdReg(v => !v)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-3)', padding: 0, lineHeight: 1 }}>{showPwdReg ? '🙈' : '👁'}</button>
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5, marginBottom: 16 }}>
                 <input type="checkbox" id="terms" checked={form.terms} onChange={e => update('terms', e.target.checked)} style={{ marginTop: 3, accentColor: 'var(--orange)' }} />
