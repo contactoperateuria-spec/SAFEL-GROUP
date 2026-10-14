@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle, adminLogActivity, adminGetDraftProducts, adminActivateDraftProducts, adminArchiveActiveProducts } from '@/lib/db'
+import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle, adminLogActivity, adminGetDraftProducts, adminActivateDraftProducts, adminArchiveActiveProducts, adminGetOrdersByCycle, adminUpdateOrderStatus } from '@/lib/db'
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'OUVERT', closed: 'FERMÉ', in_transit: 'EN TRANSIT',
@@ -29,6 +29,10 @@ export default function AdminCycles() {
   const [saving, setSaving] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [draftCount, setDraftCount] = useState(0)
+  const [expandedCycle, setExpandedCycle] = useState<string | null>(null)
+  const [cycleOrders, setCycleOrders] = useState<Record<string, any[]>>({})
+  const [loadingOrders, setLoadingOrders] = useState<string | null>(null)
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([adminGetCycles(), adminGetDraftProducts()]).then(([data, drafts]) => {
@@ -72,6 +76,35 @@ export default function AdminCycles() {
       }
     }
     setUpdating(null)
+  }
+
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    pending: 'En attente', confirmed: 'Confirmée', paid: 'Payée',
+    in_transit: 'En transit', in_customs: 'En douane', customs_cleared: 'Dédouanée',
+    ready: 'Prête à retirer', delivered: 'Livrée', cancelled: 'Annulée', refunded: 'Remboursée',
+  }
+  const ALL_ORDER_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered', 'cancelled', 'refunded']
+
+  const toggleCycleOrders = async (cycleId: string) => {
+    if (expandedCycle === cycleId) { setExpandedCycle(null); return }
+    setExpandedCycle(cycleId)
+    if (cycleOrders[cycleId]) return
+    setLoadingOrders(cycleId)
+    const orders = await adminGetOrdersByCycle(cycleId)
+    setCycleOrders(prev => ({ ...prev, [cycleId]: orders }))
+    setLoadingOrders(null)
+  }
+
+  const handleOrderStatusChange = async (cycleId: string, orderId: string, newStatus: string) => {
+    setUpdatingOrder(orderId)
+    const ok = await adminUpdateOrderStatus(orderId, newStatus)
+    if (ok) {
+      setCycleOrders(prev => ({
+        ...prev,
+        [cycleId]: (prev[cycleId] ?? []).map(o => o.id === orderId ? { ...o, status: newStatus } : o),
+      }))
+    }
+    setUpdatingOrder(null)
   }
 
   const handleCreate = async () => {
@@ -146,13 +179,47 @@ export default function AdminCycles() {
                   </div>
                   <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 4, fontWeight: 600, ...(STATUS_STYLE[c.status] ?? {}) }}>{STATUS_LABEL[c.status] ?? c.status}</span>
                 </div>
-                {actions.length > 0 && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {actions.map(a => (
-                      <button key={a.next} disabled={updating === c.id} onClick={() => handleStatusChange(c.id, a.next)} style={{ border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.6)', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', background: 'transparent', opacity: updating === c.id ? .5 : 1 }}>
-                        {updating === c.id ? '…' : a.label}
-                      </button>
-                    ))}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {actions.map(a => (
+                    <button key={a.next} disabled={updating === c.id} onClick={() => handleStatusChange(c.id, a.next)} style={{ border: '1px solid rgba(255,255,255,.2)', color: 'rgba(255,255,255,.6)', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', background: 'transparent', opacity: updating === c.id ? .5 : 1 }}>
+                      {updating === c.id ? '…' : a.label}
+                    </button>
+                  ))}
+                  <button onClick={() => toggleCycleOrders(c.id)} style={{ border: '1px solid rgba(147,197,253,.3)', color: '#93C5FD', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', background: 'transparent', marginLeft: actions.length > 0 ? 4 : 0 }}>
+                    {expandedCycle === c.id ? '▲ Masquer commandes' : '▼ Voir commandes'}
+                  </button>
+                </div>
+
+                {expandedCycle === c.id && (
+                  <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 12 }}>
+                    {loadingOrders === c.id ? (
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,.35)', padding: '8px 0' }}>Chargement…</div>
+                    ) : (cycleOrders[c.id] ?? []).length === 0 ? (
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '8px 0' }}>Aucune commande dans ce cycle.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(cycleOrders[c.id] ?? []).map(o => (
+                          <div key={o.id} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 6, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.85)' }}>{o.reference ?? o.id.slice(0, 8).toUpperCase()}</div>
+                              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginTop: 2 }}>
+                                {o.client_name ?? o.guest_name ?? '—'} · {o.total_cfa ? `${o.total_cfa.toLocaleString('fr-FR')} CFA` : '—'}
+                              </div>
+                            </div>
+                            <select
+                              value={o.status}
+                              disabled={updatingOrder === o.id}
+                              onChange={e => handleOrderStatusChange(c.id, o.id, e.target.value)}
+                              style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: 'rgba(255,255,255,.8)', borderRadius: 4, fontSize: 11, padding: '4px 8px', outline: 'none', cursor: 'pointer', opacity: updatingOrder === o.id ? .5 : 1 }}
+                            >
+                              {ALL_ORDER_STATUSES.map(s => (
+                                <option key={s} value={s}>{s === o.status ? `✓ ${ORDER_STATUS_LABEL[s]}` : ORDER_STATUS_LABEL[s]}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -52,6 +52,9 @@ export default function AdminParametres() {
   const [formSaving, setFormSaving] = useState(false)
   const [formError, setFormError] = useState('')
   const [createdPassword, setCreatedPassword] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editPerms, setEditPerms] = useState<Record<string, boolean>>({})
+  const [editSaving, setEditSaving] = useState(false)
 
   useEffect(() => {
     adminGetSettings().then(settings => {
@@ -112,6 +115,24 @@ export default function AdminParametres() {
       body: JSON.stringify({ id, is_active: !current }),
     })
     setAdmins(prev => prev.map(a => a.id === id ? { ...a, is_active: !current } : a))
+  }
+
+  const startEdit = (a: SubAdmin) => {
+    setEditingId(a.id)
+    setEditPerms({ ...a.permissions })
+  }
+
+  const handleEditSave = async () => {
+    if (!editingId) return
+    setEditSaving(true)
+    await fetch('/api/admin/subadmins', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editingId, permissions: editPerms }),
+    })
+    setAdmins(prev => prev.map(a => a.id === editingId ? { ...a, permissions: editPerms } : a))
+    setEditingId(null)
+    setEditSaving(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -223,32 +244,58 @@ export default function AdminParametres() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {admins.map(a => (
-                <div key={a.id} style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{a.name}</span>
-                      <span style={{ fontSize: 10, background: ROLE_COLORS[a.role] + '22', color: ROLE_COLORS[a.role], border: `1px solid ${ROLE_COLORS[a.role]}44`, borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>
-                        {ROLE_LABELS[a.role] ?? a.role}
-                      </span>
-                      {!a.is_active && <span style={{ fontSize: 10, background: 'rgba(255,255,255,.06)', color: 'rgba(255,255,255,.3)', borderRadius: 4, padding: '1px 6px' }}>Désactivé</span>}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6 }}>{a.email}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {ALL_PERMISSIONS.map(p => (
-                        <span key={p.key} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: a.permissions?.[p.key] ? 'rgba(249,115,22,.15)' : 'rgba(255,255,255,.04)', color: a.permissions?.[p.key] ? 'var(--orange)' : 'rgba(255,255,255,.2)', border: `1px solid ${a.permissions?.[p.key] ? 'rgba(249,115,22,.25)' : 'rgba(255,255,255,.06)'}` }}>
-                          {p.label}
+                <div key={a.id} style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{a.name}</span>
+                        <span style={{ fontSize: 10, background: ROLE_COLORS[a.role] + '22', color: ROLE_COLORS[a.role], border: `1px solid ${ROLE_COLORS[a.role]}44`, borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>
+                          {ROLE_LABELS[a.role] ?? a.role}
                         </span>
-                      ))}
+                        {!a.is_active && <span style={{ fontSize: 10, background: 'rgba(255,255,255,.06)', color: 'rgba(255,255,255,.3)', borderRadius: 4, padding: '1px 6px' }}>Désactivé</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6 }}>{a.email}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {ALL_PERMISSIONS.map(p => (
+                          <span key={p.key} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: a.permissions?.[p.key] ? 'rgba(249,115,22,.15)' : 'rgba(255,255,255,.04)', color: a.permissions?.[p.key] ? 'var(--orange)' : 'rgba(255,255,255,.2)', border: `1px solid ${a.permissions?.[p.key] ? 'rgba(249,115,22,.25)' : 'rgba(255,255,255,.06)'}` }}>
+                            {p.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => startEdit(a)} style={{ fontSize: 10, padding: '4px 10px', background: 'rgba(147,197,253,.1)', border: '1px solid rgba(147,197,253,.2)', borderRadius: 4, color: '#93C5FD', cursor: 'pointer' }}>
+                        Modifier
+                      </button>
+                      <button onClick={() => handleToggle(a.id, a.is_active)} style={{ fontSize: 10, padding: '4px 10px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 4, color: 'rgba(255,255,255,.6)', cursor: 'pointer' }}>
+                        {a.is_active ? 'Désactiver' : 'Activer'}
+                      </button>
+                      <button onClick={() => handleDelete(a.id)} style={{ fontSize: 10, padding: '4px 10px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 4, color: '#f87171', cursor: 'pointer' }}>
+                        Supprimer
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => handleToggle(a.id, a.is_active)} style={{ fontSize: 10, padding: '4px 10px', background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 4, color: 'rgba(255,255,255,.6)', cursor: 'pointer' }}>
-                      {a.is_active ? 'Désactiver' : 'Activer'}
-                    </button>
-                    <button onClick={() => handleDelete(a.id)} style={{ fontSize: 10, padding: '4px 10px', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 4, color: '#f87171', cursor: 'pointer' }}>
-                      Supprimer
-                    </button>
-                  </div>
+                  {editingId === a.id && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>Modifier les permissions</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                        {ALL_PERMISSIONS.map(p => (
+                          <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: editPerms[p.key] ? 'var(--orange)' : 'rgba(255,255,255,.4)', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={!!editPerms[p.key]} onChange={() => setEditPerms(prev => ({ ...prev, [p.key]: !prev[p.key] }))} style={{ accentColor: 'var(--orange)', width: 12, height: 12 }} />
+                            {p.label}
+                          </label>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={handleEditSave} disabled={editSaving} style={{ fontSize: 10, padding: '4px 12px', background: 'var(--orange)', border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', opacity: editSaving ? .6 : 1 }}>
+                          {editSaving ? 'Sauvegarde…' : 'Sauvegarder'}
+                        </button>
+                        <button onClick={() => setEditingId(null)} style={{ fontSize: 10, padding: '4px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,.15)', borderRadius: 4, color: 'rgba(255,255,255,.5)', cursor: 'pointer' }}>
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
