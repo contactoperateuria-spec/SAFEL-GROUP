@@ -64,13 +64,23 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   if (!await isAuthorized(request)) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
   const body = await request.json()
-  const { id, ...updates } = body
+  const { id, is_active, name, permissions } = body
   if (!id) return NextResponse.json({ error: 'ID manquant' }, { status: 400 })
+
+  // Whitelist stricte — le rôle ne peut pas être modifié ici
+  const safeUpdates: Record<string, unknown> = {}
+  if (typeof is_active === 'boolean') safeUpdates.is_active = is_active
+  if (typeof name === 'string' && name.trim()) safeUpdates.name = name.trim()
+  if (permissions && typeof permissions === 'object') safeUpdates.permissions = permissions
+
+  if (Object.keys(safeUpdates).length === 0) return NextResponse.json({ error: 'Aucun champ valide.' }, { status: 400 })
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabaseAdmin.from('admins') as any)
-    .update(updates)
+    .update(safeUpdates)
     .eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    .neq('role', 'super_admin')
+  if (error) return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
 

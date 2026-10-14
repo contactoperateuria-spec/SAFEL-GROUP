@@ -4,8 +4,22 @@ import type { NextRequest } from 'next/server'
 const ADMIN_COOKIE = 'safel_admin_session'
 const SUBADMIN_COOKIE = 'safel_subadmin_session'
 const COOKIE_VALUE = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
+const SUBADMIN_SECRET = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
 
-export function proxy(request: NextRequest) {
+async function isValidSubadminToken(token: string): Promise<boolean> {
+  const [emailB64, sigB64] = token.split('.')
+  if (!emailB64 || !sigB64) return false
+  try {
+    const email = atob(emailB64)
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey('raw', encoder.encode(SUBADMIN_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(email))
+    const expected = btoa(String.fromCharCode(...new Uint8Array(sig)))
+    return expected === sigB64
+  } catch { return false }
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (!pathname.startsWith('/admin')) return NextResponse.next()
   if (pathname === '/admin/login') return NextResponse.next()
@@ -15,7 +29,7 @@ export function proxy(request: NextRequest) {
   const subadminSession = request.cookies.get(SUBADMIN_COOKIE)
 
   if (adminSession?.value === COOKIE_VALUE) return NextResponse.next()
-  if (subadminSession?.value) return NextResponse.next()
+  if (subadminSession?.value && await isValidSubadminToken(subadminSession.value)) return NextResponse.next()
 
   const loginUrl = request.nextUrl.clone()
   loginUrl.pathname = '/admin/login'

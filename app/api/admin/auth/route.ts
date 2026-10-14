@@ -4,8 +4,27 @@ import { supabase, supabaseAdmin } from '@/lib/supabase'
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'safel2025'
 const COOKIE_VALUE = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
+const SUBADMIN_SECRET = process.env.ADMIN_SESSION_SECRET ?? 'sg_session_ok'
 const ADMIN_COOKIE = 'safel_admin_session'
 const SUBADMIN_COOKIE = 'safel_subadmin_session'
+
+async function signToken(email: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey('raw', encoder.encode(SUBADMIN_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(email))
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
+  return `${btoa(email)}.${b64}`
+}
+
+async function verifyToken(token: string): Promise<string | null> {
+  const [emailB64, sigB64] = token.split('.')
+  if (!emailB64 || !sigB64) return null
+  try {
+    const email = atob(emailB64)
+    const expected = await signToken(email)
+    return expected === token ? email : null
+  } catch { return null }
+}
 
 const attempts = new Map<string, { count: number; firstAt: number }>()
 
@@ -32,7 +51,8 @@ export async function GET(request: NextRequest) {
   }
 
   if (subadminCookie?.value) {
-    const email = subadminCookie.value
+    const email = await verifyToken(subadminCookie.value)
+    if (!email) return NextResponse.json({ error: 'Session invalide' }, { status: 401 })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabaseAdmin.from('admins') as any)
       .select('name, role, permissions')
@@ -100,8 +120,9 @@ export async function POST(request: NextRequest) {
     }
 
     attempts.delete(ip)
+    const token = await signToken(body.email)
     const response = NextResponse.json({ ok: true, type: 'sub_admin' })
-    response.cookies.set(SUBADMIN_COOKIE, body.email, {
+    response.cookies.set(SUBADMIN_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
