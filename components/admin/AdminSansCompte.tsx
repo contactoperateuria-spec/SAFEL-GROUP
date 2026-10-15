@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { adminGetCycles, getProducts, adminCreateGuestOrder, adminGetOrders } from '@/lib/db'
 import { generateCouponPDF, downloadPDF } from '@/lib/generateCoupon'
 
+
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
 const inp: React.CSSProperties = {
@@ -208,6 +209,7 @@ export default function AdminSansCompte() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [pickerIdx, setPickerIdx] = useState<number | null>(null)
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([adminGetCycles(), getProducts(), adminGetOrders()]).then(([cy, pr, ord]) => {
@@ -227,6 +229,31 @@ export default function AdminSansCompte() {
       return next
     })
     setPickerIdx(null)
+  }
+
+  const handleDownloadPDF = async (o: any) => {
+    setDownloadingPdf(o.id)
+    try {
+      const items = (o.order_items ?? []).map((i: any) => ({
+        name: i.products?.name ?? 'Produit',
+        qty: i.quantity,
+        unitPrice: i.unit_price_cfa ?? 0,
+        color: i.color || undefined,
+        imageUrl: i.products?.images?.[0] ?? undefined,
+      }))
+      const pdfBytes = await generateCouponPDF({
+        reference: o.reference ?? o.id.slice(0, 8).toUpperCase(),
+        customerName: o.customer_name ?? '',
+        customerPhone: o.customer_phone ?? '',
+        items,
+        totalMarchandises: o.total_cfa ?? 0,
+        fraisDouane: 0,
+        cycle: o.cycles?.name ?? '',
+        date: new Date(o.created_at).toLocaleDateString('fr-FR'),
+      })
+      downloadPDF(pdfBytes, `recu-${o.reference ?? o.id.slice(0, 8)}.pdf`)
+    } catch { /* silencieux */ }
+    setDownloadingPdf(null)
   }
 
   const addItem = () => setItems(prev => [...prev, { productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
@@ -403,11 +430,11 @@ export default function AdminSansCompte() {
           <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 13, padding: 20, textAlign: 'center' }}>Chargement…</div>
         ) : (
           <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr', gap: 8, padding: '10px 16px', fontSize: 11, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.04em', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-              <span>Réf.</span><span>Client</span><span>Montant</span><span>Statut</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr auto', gap: 8, padding: '10px 16px', fontSize: 11, color: 'rgba(255,255,255,.4)', textTransform: 'uppercase', letterSpacing: '.04em', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <span>Réf.</span><span>Client</span><span>Montant</span><span>Statut</span><span></span>
             </div>
             {guestOrders.map(o => (
-              <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 12, color: 'rgba(255,255,255,.7)', alignItems: 'center' }}>
+              <div key={o.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr auto', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,.05)', fontSize: 12, color: 'rgba(255,255,255,.7)', alignItems: 'center' }}>
                 <span style={{ fontWeight: 600 }}>{o.reference ?? '—'}</span>
                 <span>
                   <div>{o.customer_name}</div>
@@ -415,6 +442,13 @@ export default function AdminSansCompte() {
                 </span>
                 <span>{fmt(o.total_cfa ?? 0)} FCFA</span>
                 <span><span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 4, fontWeight: 600, ...(STATUS_STYLE[o.status] ?? {}) }}>{STATUS_LABEL[o.status] ?? o.status}</span></span>
+                <button
+                  onClick={() => handleDownloadPDF(o)}
+                  disabled={downloadingPdf === o.id}
+                  style={{ background: 'rgba(147,197,253,.1)', border: '1px solid rgba(147,197,253,.25)', color: '#93C5FD', borderRadius: 4, padding: '4px 8px', fontSize: 10, cursor: downloadingPdf === o.id ? 'wait' : 'pointer', whiteSpace: 'nowrap', opacity: downloadingPdf === o.id ? .5 : 1 }}
+                >
+                  {downloadingPdf === o.id ? '…' : '↓ PDF'}
+                </button>
               </div>
             ))}
             {guestOrders.length === 0 && (

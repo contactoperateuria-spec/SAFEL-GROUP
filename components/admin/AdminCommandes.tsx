@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { adminGetOrders, adminUpdateOrderStatus, adminUpdateProduct, adminLogActivity, adminDeleteOrder } from '@/lib/db'
+import { generateCouponPDF, downloadPDF } from '@/lib/generateCoupon'
 
 function fmt(n: number) { return n.toLocaleString('fr-FR') }
 
@@ -39,6 +40,7 @@ export default function AdminCommandes() {
   const [cycleFilter, setCycleFilter] = useState('Tous cycles')
   const [updating, setUpdating] = useState<string | null>(null)
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null)
   // customsFeeInput keyed by product_id
   const [customsFeeInput, setCustomsFeeInput] = useState<Record<string, string>>({})
   const [savingFee, setSavingFee] = useState<string | null>(null)
@@ -86,6 +88,32 @@ export default function AdminCommandes() {
         reference: ref,
       })
     }
+  }
+
+  const handleDownloadPDF = async (o: any) => {
+    setDownloadingPdf(o.id)
+    try {
+      const items = (o.order_items ?? []).map((i: any) => ({
+        name: i.products?.name ?? 'Produit',
+        qty: i.quantity,
+        unitPrice: i.unit_price_cfa ?? 0,
+        color: i.color || undefined,
+        imageUrl: i.products?.images?.[0] ?? undefined,
+      }))
+      const totalCustoms = (o.order_items ?? []).reduce((s: number, i: any) => s + (i.products?.customs_fee_cfa ?? 0) * i.quantity, 0)
+      const pdfBytes = await generateCouponPDF({
+        reference: o.reference ?? o.id.slice(0, 8).toUpperCase(),
+        customerName: o.customer_name ?? '',
+        customerPhone: o.customer_phone ?? '',
+        items,
+        totalMarchandises: o.total_cfa ?? 0,
+        fraisDouane: totalCustoms,
+        cycle: o.cycles?.name ?? '',
+        date: new Date(o.created_at).toLocaleDateString('fr-FR'),
+      })
+      downloadPDF(pdfBytes, `recu-${o.reference ?? o.id.slice(0, 8)}.pdf`)
+    } catch { /* silencieux */ }
+    setDownloadingPdf(null)
   }
 
   const handleSaveProductFee = async (productId: string, fee: number) => {
@@ -185,9 +213,18 @@ export default function AdminCommandes() {
                       })()}
                     </div>
                   </span>
-                  <button onClick={() => setExpandedOrder(isOpen ? null : o.id)} style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', borderRadius: 4, padding: '4px 8px', fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    {isOpen ? '▲' : '▼ Détails'}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <button onClick={() => setExpandedOrder(isOpen ? null : o.id)} style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', borderRadius: 4, padding: '4px 8px', fontSize: 10, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      {isOpen ? '▲' : '▼ Détails'}
+                    </button>
+                    <button
+                      onClick={() => handleDownloadPDF(o)}
+                      disabled={downloadingPdf === o.id}
+                      style={{ background: 'rgba(147,197,253,.1)', border: '1px solid rgba(147,197,253,.25)', color: '#93C5FD', borderRadius: 4, padding: '4px 8px', fontSize: 10, cursor: downloadingPdf === o.id ? 'wait' : 'pointer', whiteSpace: 'nowrap', opacity: downloadingPdf === o.id ? .5 : 1 }}
+                    >
+                      {downloadingPdf === o.id ? '…' : '↓ Reçu PDF'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Panneau détail */}
