@@ -36,6 +36,7 @@ export default function CouponPage() {
 
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
+  const [clientPhoneConfirm, setClientPhoneConfirm] = useState('')
   const [formDone, setFormDone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -78,6 +79,10 @@ export default function CouponPage() {
   const handleConfirmOrder = async () => {
     if (!clientName.trim() || !clientPhone.trim()) {
       setSaveError('Merci de renseigner votre nom et téléphone.')
+      return
+    }
+    if (clientPhone.trim() !== clientPhoneConfirm.trim()) {
+      setSaveError('Les numéros de téléphone ne correspondent pas. Vérifiez et réessayez.')
       return
     }
     if (!cycleId) {
@@ -158,6 +163,29 @@ export default function CouponPage() {
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Téléphone (WhatsApp de préférence)</div>
               <input type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="+228 XX XX XX XX" style={{ width: '100%', height: 40, border: '1.5px solid var(--border-2)', borderRadius: 8, padding: '0 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.04em' }}>Confirmer le téléphone</div>
+              <input
+                type="tel"
+                value={clientPhoneConfirm}
+                onChange={e => setClientPhoneConfirm(e.target.value)}
+                placeholder="+228 XX XX XX XX"
+                style={{
+                  width: '100%', height: 40, borderRadius: 8, padding: '0 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                  border: clientPhoneConfirm && clientPhone !== clientPhoneConfirm
+                    ? '1.5px solid #E53E3E'
+                    : clientPhoneConfirm && clientPhone === clientPhoneConfirm
+                      ? '1.5px solid #38A169'
+                      : '1.5px solid var(--border-2)',
+                }}
+              />
+              {clientPhoneConfirm && clientPhone !== clientPhoneConfirm && (
+                <div style={{ fontSize: 11, color: '#E53E3E', marginTop: 4 }}>Les numéros ne correspondent pas</div>
+              )}
+              {clientPhoneConfirm && clientPhone === clientPhoneConfirm && (
+                <div style={{ fontSize: 11, color: '#38A169', marginTop: 4 }}>✓ Numéros identiques</div>
+              )}
             </div>
             {saveError && <div style={{ fontSize: 12, color: '#E53E3E' }}>{saveError}</div>}
             <button onClick={handleConfirmOrder} disabled={saving} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 8, height: 44, fontSize: 14, fontWeight: 600, cursor: saving ? 'wait' : 'pointer', opacity: saving ? .7 : 1 }}>

@@ -203,7 +203,7 @@ export default function AdminSansCompte() {
   const [guestOrders, setGuestOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const [form, setForm] = useState({ name: '', phone: '', cycleId: '' })
+  const [form, setForm] = useState({ name: '', phone: '', phoneConfirm: '', cycleId: '' })
   const [items, setItems] = useState<LineItem[]>([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -234,6 +234,7 @@ export default function AdminSansCompte() {
 
   const handleSave = async () => {
     if (!form.name || !form.phone || !form.cycleId) return
+    if (form.phone !== form.phoneConfirm) return
     const validItems = items.filter(i => i.productId && i.quantity > 0)
     if (!validItems.length) return
     setSaving(true)
@@ -273,7 +274,7 @@ export default function AdminSansCompte() {
         downloadPDF(pdfBytes, `recu-${order.reference ?? 'commande'}.pdf`)
       } catch { /* silencieux si PDF échoue */ }
 
-      setForm({ name: '', phone: '', cycleId: '' })
+      setForm({ name: '', phone: '', phoneConfirm: '', cycleId: '' })
       setItems([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
       setTimeout(() => setSaved(false), 3000)
     }
@@ -312,6 +313,26 @@ export default function AdminSansCompte() {
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Téléphone</div>
               <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+228 XX XX XX XX" style={inp} />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginBottom: 4, textTransform: 'uppercase' }}>Confirmer le téléphone</div>
+              <input
+                value={form.phoneConfirm}
+                onChange={e => setForm(p => ({ ...p, phoneConfirm: e.target.value }))}
+                placeholder="+228 XX XX XX XX"
+                style={{
+                  ...inp,
+                  borderColor: form.phoneConfirm
+                    ? form.phone === form.phoneConfirm ? 'rgba(74,222,128,.5)' : 'rgba(239,68,68,.5)'
+                    : 'rgba(255,255,255,.12)',
+                }}
+              />
+              {form.phoneConfirm && form.phone !== form.phoneConfirm && (
+                <div style={{ fontSize: 10, color: '#F87171', marginTop: 3 }}>Les numéros ne correspondent pas</div>
+              )}
+              {form.phoneConfirm && form.phone === form.phoneConfirm && (
+                <div style={{ fontSize: 10, color: '#4ADE80', marginTop: 3 }}>✓ Numéros identiques</div>
+              )}
             </div>
           </div>
 
