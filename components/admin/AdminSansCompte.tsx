@@ -208,6 +208,7 @@ export default function AdminSansCompte() {
   const [items, setItems] = useState<LineItem[]>([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [pickerIdx, setPickerIdx] = useState<number | null>(null)
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null)
 
@@ -260,10 +261,20 @@ export default function AdminSansCompte() {
   const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx))
 
   const handleSave = async () => {
-    if (!form.name || !form.phone || !form.cycleId) return
-    if (form.phone !== form.phoneConfirm) return
+    setSaveError('')
+    if (!form.name || !form.phone || !form.cycleId) {
+      setSaveError('Merci de renseigner le nom, le téléphone et le cycle.')
+      return
+    }
+    if (form.phone !== form.phoneConfirm) {
+      setSaveError('Les numéros de téléphone ne correspondent pas.')
+      return
+    }
     const validItems = items.filter(i => i.productId && i.quantity > 0)
-    if (!validItems.length) return
+    if (!validItems.length) {
+      setSaveError('Ajoutez au moins un article valide.')
+      return
+    }
     setSaving(true)
     const order = await adminCreateGuestOrder({
       cycle_id: form.cycleId,
@@ -303,6 +314,7 @@ export default function AdminSansCompte() {
 
       setForm({ name: '', phone: '', phoneConfirm: '', cycleId: '' })
       setItems([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
+      setSaveError('')
       setTimeout(() => setSaved(false), 3000)
     }
     setSaving(false)
@@ -419,6 +431,11 @@ export default function AdminSansCompte() {
             </div>
           )}
 
+          {saveError && (
+            <div style={{ fontSize: 11, color: '#F87171', background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', borderRadius: 4, padding: '7px 10px', marginBottom: 8 }}>
+              ⚠ {saveError}
+            </div>
+          )}
           <button onClick={handleSave} disabled={saving || loading} style={{ background: 'var(--orange)', color: '#fff', border: 'none', borderRadius: 6, padding: '9px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%', opacity: saving ? .5 : 1 }}>
             {saved ? '✅ Commande enregistrée' : saving ? 'Enregistrement…' : 'Enregistrer la commande'}
           </button>
