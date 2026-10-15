@@ -26,11 +26,16 @@ function CatalogueContent() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [categorie, setCategorie] = useState(() => searchParams.get('categorie') ?? 'Toutes catégories')
+  const [categorie, setCategorie] = useState('Toutes catégories')
   const [tri, setTri] = useState('Pertinence')
   const [vue, setVue] = useState<'grid' | 'list'>('grid')
 
   const [allProducts, setAllProducts] = useState<DisplayProduct[]>([])
+
+  useEffect(() => {
+    const cat = searchParams.get('categorie')
+    if (cat) setCategorie(cat)
+  }, [searchParams])
 
   useEffect(() => {
     getProducts().then(data => {
