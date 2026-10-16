@@ -29,6 +29,7 @@ export default function CouponPage() {
   const clearCart = useCartStore(s => s.clearCart)
 
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfError, setPdfError] = useState('')
   const [orderSaved, setOrderSaved] = useState(false)
   const [orderRef, setOrderRef] = useState(DEMO_ORDER.ref)
   const [cycleId, setCycleId] = useState<string | null>(null)
@@ -128,6 +129,7 @@ export default function CouponPage() {
 
   const handleDownloadPDF = async () => {
     setPdfLoading(true)
+    setPdfError('')
     try {
       const bytes = await generateCouponPDF({
         reference: displayRef,
@@ -140,6 +142,8 @@ export default function CouponPage() {
         date: today,
       })
       downloadPDF(bytes, `coupon-${displayRef}.pdf`)
+    } catch {
+      setPdfError('Le téléchargement a échoué. Appuyez longuement sur le bouton ou ouvrez le lien dans votre navigateur principal (Chrome, Safari).')
     } finally {
       setPdfLoading(false)
     }
@@ -297,6 +301,11 @@ export default function CouponPage() {
             </svg>
             {pdfLoading ? 'Génération…' : 'Télécharger le PDF'}
           </button>
+          {pdfError && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#C53030', background: '#FFF5F5', border: '1px solid #FEB2B2', borderRadius: 8, padding: '8px 12px', lineHeight: 1.5 }}>
+              ⚠ {pdfError}
+            </div>
+          )}
         </div>
       </div>
     </div>

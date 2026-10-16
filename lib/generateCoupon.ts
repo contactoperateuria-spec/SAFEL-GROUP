@@ -156,11 +156,19 @@ export async function generateCouponPDF(data: CouponData): Promise<Uint8Array> {
 export function downloadPDF(bytes: Uint8Array, filename: string) {
   const blob = new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+  // Sur les navigateurs intégrés (WhatsApp, TikTok, Instagram), a.download est ignoré.
+  // On tente le téléchargement, et si ça échoue on ouvre dans un nouvel onglet.
+  try {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch {
+    window.open(url, '_blank')
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
+  }
 }
