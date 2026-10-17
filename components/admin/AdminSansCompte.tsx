@@ -42,7 +42,7 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
   const handleSelect = (p: any) => {
     setSelected(p)
     const firstVariant = p.variants?.[0] ?? ''
-    setColor(firstVariant || p.colors?.[0] ?? '')
+    setColor(firstVariant || (p.colors?.[0] ?? ''))
     setSize(firstVariant ? '' : (p.pointures?.[0] ?? p.sizes?.[0] ?? ''))
     setQty(1)
     setImgIdx(0)
