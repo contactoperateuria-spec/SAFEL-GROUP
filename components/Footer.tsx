@@ -53,7 +53,7 @@ export default function Footer() {
 
         <div style={{ paddingTop: 24, borderTop: '1px solid rgba(255,255,255,.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, fontSize: 12, color: 'rgba(255,255,255,.35)' }}>
           <span>© 2025 SAFEL GROUP · Lomé, Togo · Tous droits réservés</span>
-          <span>Conception : A.K.PHYLIPPES</span>
+          <a href="https://contactoperateuria-spec.github.io/contactoperateur/" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,.35)', textDecoration: 'none' }}>Conception : A.K.PHYLIPPES</a>
         </div>
       </div>
     </footer>
