@@ -252,7 +252,7 @@ export async function adminCreateGuestOrder(data: {
   cycle_id: string
   customer_name: string
   customer_phone: string
-  items: { product_id: string; quantity: number; unit_price: number; color?: string }[]
+  items: { product_id: string; quantity: number; unit_price: number; color?: string; size?: string }[]
   total_amount: number
 }): Promise<any | null> {
   const rand = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -281,6 +281,7 @@ export async function adminCreateGuestOrder(data: {
       quantity: i.quantity,
       unit_price_cfa: i.unit_price,
       color: i.color ?? null,
+      size: i.size ?? null,
     }))
   )
   return newOrder

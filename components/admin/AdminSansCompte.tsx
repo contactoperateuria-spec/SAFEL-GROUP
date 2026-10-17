@@ -17,8 +17,8 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
 }
 const STATUS_LABEL: Record<string, string> = { pending: 'En attente', paid: 'Payé', confirmed: 'Confirmé' }
 
-type LineItem = { productId: string; productName: string; quantity: number; color: string; unitPrice: number }
-type PickedProduct = { id: string; name: string; price: number; color: string; quantity: number }
+type LineItem = { productId: string; productName: string; quantity: number; color: string; size: string; unitPrice: number }
+type PickedProduct = { id: string; name: string; price: number; color: string; size: string; quantity: number }
 
 function ProductPickerModal({ products, onConfirm, onClose }: {
   products: any[]
@@ -28,6 +28,7 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<any | null>(null)
   const [color, setColor] = useState('')
+  const [size, setSize] = useState('')
   const [qty, setQty] = useState(1)
   const [imgIdx, setImgIdx] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -41,13 +42,14 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
   const handleSelect = (p: any) => {
     setSelected(p)
     setColor(p.colors?.[0] ?? '')
+    setSize(p.pointures?.[0] ?? p.sizes?.[0] ?? '')
     setQty(1)
     setImgIdx(0)
   }
 
   const handleConfirm = () => {
     if (!selected) return
-    onConfirm({ id: selected.id, name: selected.name, price: selected.price_cfa, color, quantity: qty })
+    onConfirm({ id: selected.id, name: selected.name, price: selected.price_cfa, color, size, quantity: qty })
   }
 
   return (
@@ -159,6 +161,48 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
                   </div>
                 )}
 
+                {/* Pointures */}
+                {selected.pointures?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Pointure</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {selected.pointures.map((pt: string) => (
+                        <button
+                          key={pt}
+                          onClick={() => setSize(pt)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                            background: size === pt ? 'rgba(20,184,166,.8)' : 'rgba(255,255,255,.07)',
+                            border: size === pt ? '1px solid #14B8A6' : '1px solid rgba(255,255,255,.12)',
+                            color: size === pt ? '#fff' : 'rgba(255,255,255,.65)',
+                          }}
+                        >{pt}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tailles (si pas de pointures) */}
+                {selected.sizes?.length > 0 && !selected.pointures?.length && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Taille</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {selected.sizes.map((s: string) => (
+                        <button
+                          key={s}
+                          onClick={() => setSize(s)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                            background: size === s ? 'rgba(99,102,241,.8)' : 'rgba(255,255,255,.07)',
+                            border: size === s ? '1px solid #818CF8' : '1px solid rgba(255,255,255,.12)',
+                            color: size === s ? '#fff' : 'rgba(255,255,255,.65)',
+                          }}
+                        >{s}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Quantité */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Quantité</div>
@@ -205,7 +249,7 @@ export default function AdminSansCompte() {
   const [loading, setLoading] = useState(true)
 
   const [form, setForm] = useState({ name: '', phone: '', phoneConfirm: '', cycleId: '' })
-  const [items, setItems] = useState<LineItem[]>([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
+  const [items, setItems] = useState<LineItem[]>([{ productId: '', productName: '', quantity: 1, color: '', size: '', unitPrice: 0 }])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -226,7 +270,7 @@ export default function AdminSansCompte() {
   const handlePick = (idx: number, p: PickedProduct) => {
     setItems(prev => {
       const next = [...prev]
-      next[idx] = { productId: p.id, productName: p.name, unitPrice: p.price, quantity: p.quantity, color: p.color }
+      next[idx] = { productId: p.id, productName: p.name, unitPrice: p.price, quantity: p.quantity, color: p.color, size: p.size }
       return next
     })
     setPickerIdx(null)
@@ -257,7 +301,7 @@ export default function AdminSansCompte() {
     setDownloadingPdf(null)
   }
 
-  const addItem = () => setItems(prev => [...prev, { productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
+  const addItem = () => setItems(prev => [...prev, { productId: '', productName: '', quantity: 1, color: '', size: '', unitPrice: 0 }])
   const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx))
 
   const handleSave = async () => {
@@ -280,7 +324,7 @@ export default function AdminSansCompte() {
       cycle_id: form.cycleId,
       customer_name: form.name,
       customer_phone: form.phone,
-      items: validItems.map(i => ({ product_id: i.productId, quantity: i.quantity, unit_price: i.unitPrice, color: i.color || undefined })),
+      items: validItems.map(i => ({ product_id: i.productId, quantity: i.quantity, unit_price: i.unitPrice, color: i.color || undefined, size: i.size || undefined })),
       total_amount: total,
     })
     if (order) {
@@ -313,7 +357,7 @@ export default function AdminSansCompte() {
       } catch { /* silencieux si PDF échoue */ }
 
       setForm({ name: '', phone: '', phoneConfirm: '', cycleId: '' })
-      setItems([{ productId: '', productName: '', quantity: 1, color: '', unitPrice: 0 }])
+      setItems([{ productId: '', productName: '', quantity: 1, color: '', size: '', unitPrice: 0 }])
       setSaveError('')
       setTimeout(() => setSaved(false), 3000)
     }
@@ -400,6 +444,7 @@ export default function AdminSansCompte() {
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{item.productName}</div>
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>
                         {item.color && <span>{item.color} · </span>}
+                        {item.size && <span>{item.size} · </span>}
                         {item.quantity} × {fmt(item.unitPrice)} FCFA
                         <span style={{ color: 'var(--orange)', fontWeight: 600, marginLeft: 6 }}>{fmt(item.unitPrice * item.quantity)} FCFA</span>
                       </div>
