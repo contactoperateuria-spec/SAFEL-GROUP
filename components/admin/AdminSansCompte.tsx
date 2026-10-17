@@ -41,8 +41,9 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
 
   const handleSelect = (p: any) => {
     setSelected(p)
-    setColor(p.colors?.[0] ?? '')
-    setSize(p.pointures?.[0] ?? p.sizes?.[0] ?? '')
+    const firstVariant = p.variants?.[0] ?? ''
+    setColor(firstVariant || p.colors?.[0] ?? '')
+    setSize(firstVariant ? '' : (p.pointures?.[0] ?? p.sizes?.[0] ?? ''))
     setQty(1)
     setImgIdx(0)
   }
@@ -140,8 +141,29 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.6, marginBottom: 14 }}>{selected.description}</div>
                 )}
 
-                {/* Couleurs */}
-                {selected.colors?.length > 0 && (
+                {/* Variantes (combinées) */}
+                {selected.variants?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Variante</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {selected.variants.map((v: string) => (
+                        <button
+                          key={v}
+                          onClick={() => setColor(v)}
+                          style={{
+                            padding: '5px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+                            background: color === v ? 'var(--orange)' : 'rgba(255,255,255,.07)',
+                            border: color === v ? '1px solid var(--orange)' : '1px solid rgba(255,255,255,.12)',
+                            color: color === v ? '#fff' : 'rgba(255,255,255,.65)',
+                          }}
+                        >{v}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Couleurs (anciens produits sans variantes) */}
+                {!selected.variants?.length && selected.colors?.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Couleur</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -156,48 +178,6 @@ function ProductPickerModal({ products, onConfirm, onClose }: {
                             color: color === c ? '#fff' : 'rgba(255,255,255,.65)',
                           }}
                         >{c}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Pointures */}
-                {selected.pointures?.length > 0 && (
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Pointure</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {selected.pointures.map((pt: string) => (
-                        <button
-                          key={pt}
-                          onClick={() => setSize(pt)}
-                          style={{
-                            padding: '5px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer', fontWeight: 600,
-                            background: size === pt ? 'rgba(20,184,166,.8)' : 'rgba(255,255,255,.07)',
-                            border: size === pt ? '1px solid #14B8A6' : '1px solid rgba(255,255,255,.12)',
-                            color: size === pt ? '#fff' : 'rgba(255,255,255,.65)',
-                          }}
-                        >{pt}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Tailles (si pas de pointures) */}
-                {selected.sizes?.length > 0 && !selected.pointures?.length && (
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 6, textTransform: 'uppercase' }}>Taille</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {selected.sizes.map((s: string) => (
-                        <button
-                          key={s}
-                          onClick={() => setSize(s)}
-                          style={{
-                            padding: '5px 12px', borderRadius: 4, fontSize: 12, cursor: 'pointer', fontWeight: 600,
-                            background: size === s ? 'rgba(99,102,241,.8)' : 'rgba(255,255,255,.07)',
-                            border: size === s ? '1px solid #818CF8' : '1px solid rgba(255,255,255,.12)',
-                            color: size === s ? '#fff' : 'rgba(255,255,255,.65)',
-                          }}
-                        >{s}</button>
                       ))}
                     </div>
                   </div>

@@ -8,9 +8,7 @@ const CATEGORIES = ['Beauté', 'Électronique', 'Mode Femme', 'Mode Homme', 'Mai
 
 const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
-  colors: [] as string[], colorInput: '',
-  sizes: [] as string[], sizeInput: '',
-  pointures: [] as string[], pointureInput: '',
+  variants: [] as string[], variantInput: '',
   stock: '10', is_active: true, is_draft: false, customs_fee_cfa: '0',
 }
 
@@ -41,29 +39,13 @@ export default function AdminProduits() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }))
 
-  const addColor = () => {
-    const val = form.colorInput.trim()
-    if (!val || form.colors.includes(val)) { setForm(p => ({ ...p, colorInput: '' })); return }
-    setForm(p => ({ ...p, colors: [...p.colors, val], colorInput: '' }))
+  const addVariant = () => {
+    const val = form.variantInput.trim()
+    if (!val || form.variants.includes(val)) { setForm(p => ({ ...p, variantInput: '' })); return }
+    setForm(p => ({ ...p, variants: [...p.variants, val], variantInput: '' }))
   }
 
-  const removeColor = (c: string) => setForm(p => ({ ...p, colors: p.colors.filter(x => x !== c) }))
-
-  const addSize = () => {
-    const val = form.sizeInput.trim().toUpperCase()
-    if (!val || form.sizes.includes(val)) { setForm(p => ({ ...p, sizeInput: '' })); return }
-    setForm(p => ({ ...p, sizes: [...p.sizes, val], sizeInput: '' }))
-  }
-
-  const removeSize = (s: string) => setForm(p => ({ ...p, sizes: p.sizes.filter(x => x !== s) }))
-
-  const addPointure = () => {
-    const val = form.pointureInput.trim()
-    if (!val || form.pointures.includes(val)) { setForm(p => ({ ...p, pointureInput: '' })); return }
-    setForm(p => ({ ...p, pointures: [...p.pointures, val], pointureInput: '' }))
-  }
-
-  const removePointure = (pt: string) => setForm(p => ({ ...p, pointures: p.pointures.filter(x => x !== pt) }))
+  const removeVariant = (v: string) => setForm(p => ({ ...p, variants: p.variants.filter(x => x !== v) }))
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -93,9 +75,10 @@ export default function AdminProduits() {
       price_cfa: parseInt(form.price_cfa) || 0,
       price_cny: form.price_cny ? parseFloat(form.price_cny) : null,
       category: form.category,
-      colors: form.colors,
-      sizes: form.sizes,
-      pointures: form.pointures,
+      colors: [],
+      sizes: [],
+      pointures: [],
+      variants: form.variants,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_draft ? false : form.is_active,
       is_draft: form.is_draft,
@@ -124,18 +107,18 @@ export default function AdminProduits() {
 
   const openEdit = (p: Product) => {
     setEditingProduct(p)
+    // Migration : si le produit a des anciennes couleurs/tailles/pointures mais pas de variantes, on les charge
+    const existingVariants = (p.variants ?? []).length > 0
+      ? p.variants
+      : [...(p.colors ?? []), ...(p.sizes ?? []), ...(p.pointures ?? [])]
     setForm({
       name: p.name,
       description: p.description ?? '',
       price_cfa: String(p.price_cfa),
       price_cny: p.price_cny != null ? String(p.price_cny) : '',
       category: p.category ?? 'Beauté',
-      colors: p.colors ?? [],
-      colorInput: '',
-      sizes: p.sizes ?? [],
-      sizeInput: '',
-      pointures: p.pointures ?? [],
-      pointureInput: '',
+      variants: existingVariants,
+      variantInput: '',
       stock: String(p.stock ?? 0),
       is_active: p.is_active ?? true,
       is_draft: p.is_draft ?? false,
@@ -170,9 +153,10 @@ export default function AdminProduits() {
       price_cfa: parseInt(form.price_cfa) || 0,
       price_cny: form.price_cny ? parseFloat(form.price_cny) : null,
       category: form.category,
-      colors: form.colors,
-      sizes: form.sizes,
-      pointures: form.pointures,
+      colors: [],
+      sizes: [],
+      pointures: [],
+      variants: form.variants,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
       customs_fee_cfa: parseInt(form.customs_fee_cfa) || 0,
@@ -265,69 +249,28 @@ export default function AdminProduits() {
             <Field label="Prix (CNY) — optionnel">
               <input type="number" value={form.price_cny} onChange={set('price_cny')} placeholder="22" style={inp} />
             </Field>
-            <Field label="Couleurs disponibles">
-              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38 }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.colors.length > 0 ? 6 : 0 }}>
-                  {form.colors.map(c => (
-                    <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(232,114,12,.18)', border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
-                      {c}
-                      <button type="button" onClick={() => removeColor(c)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
+            <Field label="Variantes (couleur, taille, pointure ou combinaison)">
+              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38, gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginBottom: form.variants.length > 0 ? 6 : 4 }}>
+                  Ex : "café / 38", "noir / 40", "Rouge", "XL"… Entrée ou + pour ajouter
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.variants.length > 0 ? 6 : 0 }}>
+                  {form.variants.map(v => (
+                    <span key={v} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(232,114,12,.18)', border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                      {v}
+                      <button type="button" onClick={() => removeVariant(v)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
                     </span>
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <input
-                    value={form.colorInput}
-                    onChange={set('colorInput')}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addColor() } }}
-                    placeholder="Ex : Rouge, Noir…"
+                    value={form.variantInput}
+                    onChange={set('variantInput')}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addVariant() } }}
+                    placeholder="Ex : café / 38"
                     style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
                   />
-                  <button type="button" onClick={addColor} style={{ background: 'rgba(232,114,12,.2)', border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
-                </div>
-              </div>
-            </Field>
-            <Field label="Tailles disponibles">
-              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38 }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.sizes.length > 0 ? 6 : 0 }}>
-                  {form.sizes.map(s => (
-                    <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(99,102,241,.18)', border: '1px solid rgba(99,102,241,.4)', color: '#818CF8', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
-                      {s}
-                      <button type="button" onClick={() => removeSize(s)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
-                    </span>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <input
-                    value={form.sizeInput}
-                    onChange={set('sizeInput')}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSize() } }}
-                    placeholder="Ex : S, M, L, XL…"
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
-                  />
-                  <button type="button" onClick={addSize} style={{ background: 'rgba(99,102,241,.2)', border: '1px solid rgba(99,102,241,.4)', color: '#818CF8', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
-                </div>
-              </div>
-            </Field>
-            <Field label="Pointures disponibles">
-              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38 }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.pointures.length > 0 ? 6 : 0 }}>
-                  {form.pointures.map(pt => (
-                    <span key={pt} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(20,184,166,.18)', border: '1px solid rgba(20,184,166,.4)', color: '#2DD4BF', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
-                      {pt}
-                      <button type="button" onClick={() => removePointure(pt)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
-                    </span>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <input
-                    value={form.pointureInput}
-                    onChange={set('pointureInput')}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPointure() } }}
-                    placeholder="Ex : 38, 39, 40, 41…"
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
-                  />
-                  <button type="button" onClick={addPointure} style={{ background: 'rgba(20,184,166,.2)', border: '1px solid rgba(20,184,166,.4)', color: '#2DD4BF', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
+                  <button type="button" onClick={addVariant} style={{ background: 'rgba(232,114,12,.2)', border: '1px solid rgba(232,114,12,.4)', color: 'var(--orange)', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
                 </div>
               </div>
             </Field>

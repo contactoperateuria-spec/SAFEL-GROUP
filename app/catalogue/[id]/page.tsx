@@ -43,16 +43,20 @@ function ProductPageInner() {
 
   const meta = CATEGORY_META[product.category ?? ''] ?? { emoji: '📦', bg: '#F5F5F5' }
   const images = product.images ?? []
-  const colors = product.colors ?? []
-  const sizes = product.sizes ?? []
-  const pointures = product.pointures ?? []
+  const variants = product.variants ?? []
+  const colors = variants.length > 0 ? [] : (product.colors ?? [])
+  const sizes = variants.length > 0 ? [] : (product.sizes ?? [])
+  const pointures = variants.length > 0 ? [] : (product.pointures ?? [])
 
-  const colorTotal = Object.values(colorQtys).reduce((a, b) => a + b, 0)
+  const variantTotal = Object.values(colorQtys).reduce((a, b) => a + b, 0)
+  const colorTotal = variantTotal
   const sizeTotal = Object.values(sizeQtys).reduce((a, b) => a + b, 0)
   const pointureTotal = Object.values(pointureQtys).reduce((a, b) => a + b, 0)
-  const totalQty = colors.length > 0
-    ? (pointures.length > 0 ? colorTotal + pointureTotal : colorTotal)
-    : (pointures.length > 0 ? pointureTotal : (sizes.length > 0 ? sizeTotal : (colorQtys._ ?? 1)))
+  const totalQty = variants.length > 0
+    ? variantTotal
+    : (colors.length > 0
+        ? (pointures.length > 0 ? colorTotal + pointureTotal : colorTotal)
+        : (pointures.length > 0 ? pointureTotal : (sizes.length > 0 ? sizeTotal : (colorQtys._ ?? 1))))
   const totalPrice = totalQty * product.price_cfa
   const meetsMin = totalQty >= 1
 
@@ -80,22 +84,23 @@ function ProductPageInner() {
 
   const handleAddToCart = () => {
     const base = { product_id: product.id, name: product.name, emoji: meta.emoji, bg: meta.bg, image: images[0] ?? undefined, price: product.price_cfa }
-    if (colors.length > 0) {
+    if (variants.length > 0) {
+      variants.filter(v => (colorQtys[v] ?? 0) > 0).forEach(v => {
+        addItem({ ...base, quantity: colorQtys[v], color: v })
+      })
+    } else if (colors.length > 0) {
       Object.entries(colorQtys).filter(([, q]) => q > 0).forEach(([color, qty]) => {
         addItem({ ...base, quantity: qty, color })
       })
-    }
-    if (pointures.length > 0) {
+    } else if (pointures.length > 0) {
       Object.entries(pointureQtys).filter(([, q]) => q > 0).forEach(([pt, qty]) => {
         addItem({ ...base, quantity: qty, size: pt })
       })
-    }
-    if (colors.length === 0 && pointures.length === 0 && sizes.length > 0) {
+    } else if (sizes.length > 0) {
       Object.entries(sizeQtys).filter(([, q]) => q > 0).forEach(([size, qty]) => {
         addItem({ ...base, quantity: qty, size })
       })
-    }
-    if (colors.length === 0 && pointures.length === 0 && sizes.length === 0) {
+    } else {
       addItem({ ...base, quantity: colorQtys._ ?? 1 })
     }
     router.push('/panier')
@@ -150,6 +155,23 @@ function ProductPageInner() {
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>
             Frais de douane : fixés à l&apos;arrivée à Lomé · Délai estimé : 30 à 40 jours
           </div>
+
+          {/* Variantes (couleur/taille/pointure combinées) */}
+          {variants.length > 0 && (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>
+                Variantes <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— choisissez votre variante</span>
+              </div>
+              <QtyTable rows={variants} qtys={colorQtys} onChange={setColorQty} onDelta={changeColorQty} />
+              {Object.entries(colorQtys).filter(([, q]) => q > 0).length > 0 && (
+                <SelectionSummary
+                  entries={variants.filter(v => (colorQtys[v] ?? 0) > 0).map(v => ({ label: v, qty: colorQtys[v] }))}
+                  total={variantTotal}
+                  price={totalPrice}
+                />
+              )}
+            </>
+          )}
 
           {/* Couleurs & quantités */}
           {colors.length > 0 && (

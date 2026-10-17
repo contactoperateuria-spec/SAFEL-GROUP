@@ -145,6 +145,7 @@ export async function adminCreateProduct(product: {
   colors: string[]
   sizes: string[]
   pointures: string[]
+  variants: string[]
   stock: number
   is_active: boolean
   is_draft?: boolean

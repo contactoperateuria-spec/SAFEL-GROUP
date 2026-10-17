@@ -24,6 +24,7 @@ export interface Product {
   colors: string[]
   sizes: string[]
   pointures: string[]
+  variants: string[]
   stock: number
   is_active: boolean
   is_draft: boolean
