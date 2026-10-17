@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { adminGetCycles, adminUpdateCycleStatus, adminCreateCycle, adminLogActivity, adminGetDraftProducts, adminActivateDraftProducts, adminArchiveActiveProducts, adminGetOrdersByCycle, adminUpdateOrderStatus } from '@/lib/db'
+import { generateRecapPDF, downloadPDF } from '@/lib/generateCoupon'
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'OUVERT', closed: 'FERMÉ', in_transit: 'EN TRANSIT',
@@ -34,6 +35,7 @@ export default function AdminCycles() {
   const [loadingOrders, setLoadingOrders] = useState<string | null>(null)
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
   const [recapCycle, setRecapCycle] = useState<string | null>(null)
+  const [downloadingRecap, setDownloadingRecap] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([adminGetCycles(), adminGetDraftProducts()]).then(([data, drafts]) => {
@@ -115,6 +117,24 @@ export default function AdminCycles() {
     }
     setRecapCycle(cycleId)
     setExpandedCycle(null)
+  }
+
+  const handleDownloadRecap = async (cycleId: string, cycleName: string) => {
+    setDownloadingRecap(cycleId)
+    try {
+      if (!cycleOrders[cycleId]) {
+        const orders = await adminGetOrdersByCycle(cycleId)
+        setCycleOrders(prev => ({ ...prev, [cycleId]: orders }))
+      }
+      const recap = buildRecap(cycleId)
+      const pdfBytes = await generateRecapPDF({
+        cycleName,
+        date: new Date().toLocaleDateString('fr-FR'),
+        items: recap,
+      })
+      downloadPDF(pdfBytes, `recap-${cycleName.replace(/\s+/g, '-')}.pdf`)
+    } catch { /* silencieux */ }
+    setDownloadingRecap(null)
   }
 
   const toggleCycleOrders = async (cycleId: string) => {
@@ -235,8 +255,17 @@ export default function AdminCycles() {
                       if (recap.length === 0) return <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '8px 0' }}>Aucun article commandé dans ce cycle.</div>
                       return (
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                            Récapitulatif — {recap.reduce((s, r) => s + r.totalQty, 0)} article{recap.reduce((s, r) => s + r.totalQty, 0) > 1 ? 's' : ''} au total
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                              Récapitulatif — {recap.reduce((s, r) => s + r.totalQty, 0)} article{recap.reduce((s, r) => s + r.totalQty, 0) > 1 ? 's' : ''} au total
+                            </div>
+                            <button
+                              onClick={() => handleDownloadRecap(c.id, c.name)}
+                              disabled={downloadingRecap === c.id}
+                              style={{ border: '1px solid rgba(251,191,36,.4)', color: '#FCD34D', background: 'rgba(251,191,36,.1)', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: downloadingRecap === c.id ? 'wait' : 'pointer', fontWeight: 600, opacity: downloadingRecap === c.id ? .5 : 1 }}
+                            >
+                              {downloadingRecap === c.id ? '…' : '↓ PDF'}
+                            </button>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {recap.map((item, i) => (

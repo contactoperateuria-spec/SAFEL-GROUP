@@ -153,6 +153,109 @@ export async function generateCouponPDF(data: CouponData): Promise<Uint8Array> {
   return doc.save()
 }
 
+export async function generateRecapPDF(data: {
+  cycleName: string
+  date: string
+  items: { name: string; totalQty: number; details: { color: string | null; size: string | null; qty: number }[] }[]
+}): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  const helveticaBold = await doc.embedFont(StandardFonts.HelveticaBold)
+  const helvetica = await doc.embedFont(StandardFonts.Helvetica)
+
+  const orange = rgb(0.91, 0.447, 0.047)
+  const dark = rgb(0.102, 0.102, 0.102)
+  const gray = rgb(0.45, 0.45, 0.45)
+  const lightGray = rgb(0.94, 0.94, 0.94)
+  const white = rgb(1, 1, 1)
+  const W = 595
+  const MARGIN = 40
+  const ROW_H = 28
+  const PAGE_H = 842
+  const CONTENT_TOP = 730
+  const FOOTER_H = 60
+
+  let page = doc.addPage([W, PAGE_H])
+  let y = CONTENT_TOP
+
+  const drawHeader = (p: ReturnType<typeof doc.addPage>) => {
+    p.drawRectangle({ x: 0, y: PAGE_H - 80, width: W, height: 80, color: orange })
+    p.drawRectangle({ x: MARGIN, y: PAGE_H - 58, width: 36, height: 36, color: white })
+    p.drawText('SG', { x: MARGIN + 8, y: PAGE_H - 47, size: 14, font: helveticaBold, color: orange })
+    p.drawText('SAFEL GROUP', { x: MARGIN + 46, y: PAGE_H - 34, size: 16, font: helveticaBold, color: white })
+    p.drawText('Recapitulatif cycle', { x: MARGIN + 46, y: PAGE_H - 50, size: 9, font: helvetica, color: rgb(1, 0.88, 0.76) })
+    p.drawText(data.cycleName, { x: W - 190, y: PAGE_H - 34, size: 14, font: helveticaBold, color: white })
+    p.drawText(`Edite le ${data.date}`, { x: W - 190, y: PAGE_H - 50, size: 9, font: helvetica, color: rgb(1, 0.88, 0.76) })
+  }
+
+  const drawFooter = (p: ReturnType<typeof doc.addPage>) => {
+    p.drawLine({ start: { x: MARGIN, y: 60 }, end: { x: W - MARGIN, y: 60 }, thickness: 0.5, color: lightGray })
+    p.drawText('SAFEL GROUP - Lome, Togo - wa.me/22896045369', { x: W / 2 - 130, y: 44, size: 8, font: helvetica, color: gray })
+    p.drawText('Document interne - recapitulatif des commandes du cycle', { x: W / 2 - 130, y: 30, size: 8, font: helvetica, color: lightGray })
+  }
+
+  const drawTableHeader = (p: ReturnType<typeof doc.addPage>, yPos: number) => {
+    p.drawRectangle({ x: MARGIN, y: yPos - 20, width: W - MARGIN * 2, height: 22, color: dark })
+    p.drawText('Article', { x: MARGIN + 10, y: yPos - 14, size: 9, font: helveticaBold, color: white })
+    p.drawText('Variantes', { x: 300, y: yPos - 14, size: 9, font: helveticaBold, color: white })
+    p.drawText('Total', { x: W - 80, y: yPos - 14, size: 9, font: helveticaBold, color: white })
+    return yPos - 26
+  }
+
+  drawHeader(page)
+  drawFooter(page)
+
+  // Titre
+  page.drawText('RECAPITULATIF DES ARTICLES', { x: MARGIN, y: y + 12, size: 11, font: helveticaBold, color: orange })
+  page.drawText(`Cycle : ${data.cycleName}  |  Total articles : ${data.items.reduce((s, i) => s + i.totalQty, 0)} pieces`, {
+    x: MARGIN, y: y - 2, size: 9, font: helvetica, color: gray,
+  })
+  y -= 24
+
+  y = drawTableHeader(page, y)
+
+  for (let i = 0; i < data.items.length; i++) {
+    const item = data.items[i]
+    const detailStr = item.details
+      .filter(d => d.color || d.size)
+      .map(d => `${[d.color, d.size].filter(Boolean).join(' / ')} x${d.qty}`)
+      .join('  |  ')
+    const needsNewPage = y - ROW_H < FOOTER_H + 20
+
+    if (needsNewPage) {
+      page = doc.addPage([W, PAGE_H])
+      drawHeader(page)
+      drawFooter(page)
+      y = CONTENT_TOP
+      y = drawTableHeader(page, y)
+    }
+
+    if (i % 2 === 0) {
+      page.drawRectangle({ x: MARGIN, y: y - ROW_H + 6, width: W - MARGIN * 2, height: ROW_H, color: lightGray })
+    }
+
+    const maxName = item.name.length > 36 ? item.name.slice(0, 34) + '…' : item.name
+    page.drawText(maxName, { x: MARGIN + 10, y: y - 10, size: 9, font: helveticaBold, color: dark })
+
+    if (detailStr) {
+      const maxDetail = detailStr.length > 52 ? detailStr.slice(0, 50) + '…' : detailStr
+      page.drawText(maxDetail, { x: 300, y: y - 10, size: 8, font: helvetica, color: gray })
+    }
+
+    page.drawText(`x${item.totalQty}`, { x: W - 75, y: y - 10, size: 11, font: helveticaBold, color: orange })
+    y -= ROW_H
+  }
+
+  // Total global
+  y -= 8
+  page.drawLine({ start: { x: MARGIN, y }, end: { x: W - MARGIN, y }, thickness: 1, color: lightGray })
+  y -= 18
+  page.drawRectangle({ x: W - 160, y: y - 8, width: 120, height: 24, color: orange })
+  page.drawText('TOTAL PIECES', { x: W - 153, y: y - 2, size: 9, font: helveticaBold, color: white })
+  page.drawText(`${data.items.reduce((s, i) => s + i.totalQty, 0)}`, { x: W - 58, y: y - 2, size: 12, font: helveticaBold, color: white })
+
+  return doc.save()
+}
+
 export function downloadPDF(bytes: Uint8Array, filename: string) {
   const blob = new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' })
   const url = URL.createObjectURL(blob)
