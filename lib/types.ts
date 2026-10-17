@@ -23,6 +23,7 @@ export interface Product {
   images: string[]
   colors: string[]
   sizes: string[]
+  pointures: string[]
   stock: number
   is_active: boolean
   is_draft: boolean

@@ -144,6 +144,7 @@ export async function adminCreateProduct(product: {
   category: string
   colors: string[]
   sizes: string[]
+  pointures: string[]
   stock: number
   is_active: boolean
   is_draft?: boolean
@@ -191,7 +192,7 @@ export async function adminGetOrders(): Promise<any[]> {
 export async function adminGetOrdersByCycle(cycleId: string): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabaseAdmin.from('orders') as any)
-    .select('*, order_items(id, quantity, color, unit_price_cfa, products(id, name, images, customs_fee_cfa))')
+    .select('*, order_items(id, quantity, color, size, unit_price_cfa, products(id, name, images, customs_fee_cfa))')
     .eq('cycle_id', cycleId)
     .order('created_at', { ascending: false })
   return data ?? []

@@ -33,6 +33,7 @@ export default function AdminCycles() {
   const [cycleOrders, setCycleOrders] = useState<Record<string, any[]>>({})
   const [loadingOrders, setLoadingOrders] = useState<string | null>(null)
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null)
+  const [recapCycle, setRecapCycle] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([adminGetCycles(), adminGetDraftProducts()]).then(([data, drafts]) => {
@@ -85,9 +86,41 @@ export default function AdminCycles() {
   }
   const ALL_ORDER_STATUSES = ['pending', 'confirmed', 'paid', 'in_transit', 'in_customs', 'customs_cleared', 'ready', 'delivered']
 
+  const buildRecap = (cycleId: string) => {
+    const orders = cycleOrders[cycleId] ?? []
+    const map: Record<string, { name: string; image: string | null; totalQty: number; details: { color: string | null; size: string | null; qty: number }[] }> = {}
+    for (const order of orders) {
+      for (const item of (order.order_items ?? [])) {
+        const pid = item.products?.id ?? item.product_id ?? 'unknown'
+        if (!map[pid]) {
+          map[pid] = { name: item.products?.name ?? '—', image: item.products?.images?.[0] ?? null, totalQty: 0, details: [] }
+        }
+        map[pid].totalQty += item.quantity ?? 1
+        const key = `${item.color ?? ''}|${item.size ?? ''}`
+        const existing = map[pid].details.find(d => `${d.color ?? ''}|${d.size ?? ''}` === key)
+        if (existing) existing.qty += item.quantity ?? 1
+        else map[pid].details.push({ color: item.color ?? null, size: item.size ?? null, qty: item.quantity ?? 1 })
+      }
+    }
+    return Object.values(map).sort((a, b) => b.totalQty - a.totalQty)
+  }
+
+  const toggleRecap = async (cycleId: string) => {
+    if (recapCycle === cycleId) { setRecapCycle(null); return }
+    if (!cycleOrders[cycleId]) {
+      setLoadingOrders(cycleId)
+      const orders = await adminGetOrdersByCycle(cycleId)
+      setCycleOrders(prev => ({ ...prev, [cycleId]: orders }))
+      setLoadingOrders(null)
+    }
+    setRecapCycle(cycleId)
+    setExpandedCycle(null)
+  }
+
   const toggleCycleOrders = async (cycleId: string) => {
     if (expandedCycle === cycleId) { setExpandedCycle(null); return }
     setExpandedCycle(cycleId)
+    setRecapCycle(null)
     if (cycleOrders[cycleId]) return
     setLoadingOrders(cycleId)
     const orders = await adminGetOrdersByCycle(cycleId)
@@ -188,7 +221,52 @@ export default function AdminCycles() {
                   <button onClick={() => toggleCycleOrders(c.id)} style={{ border: '1px solid rgba(147,197,253,.3)', color: '#93C5FD', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', background: 'transparent', marginLeft: actions.length > 0 ? 4 : 0 }}>
                     {expandedCycle === c.id ? '▲ Masquer commandes' : '▼ Voir commandes'}
                   </button>
+                  <button onClick={() => toggleRecap(c.id)} style={{ border: '1px solid rgba(251,191,36,.3)', color: '#FCD34D', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', background: recapCycle === c.id ? 'rgba(251,191,36,.1)' : 'transparent' }}>
+                    {recapCycle === c.id ? '▲ Masquer récap' : '📋 Récapitulatif'}
+                  </button>
                 </div>
+
+                {recapCycle === c.id && (
+                  <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 12 }}>
+                    {loadingOrders === c.id ? (
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,.35)', padding: '8px 0' }}>Chargement…</div>
+                    ) : (() => {
+                      const recap = buildRecap(c.id)
+                      if (recap.length === 0) return <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', padding: '8px 0' }}>Aucun article commandé dans ce cycle.</div>
+                      return (
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#FCD34D', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                            Récapitulatif — {recap.reduce((s, r) => s + r.totalQty, 0)} article{recap.reduce((s, r) => s + r.totalQty, 0) > 1 ? 's' : ''} au total
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {recap.map((item, i) => (
+                              <div key={i} style={{ background: 'rgba(251,191,36,.04)', border: '1px solid rgba(251,191,36,.12)', borderRadius: 6, padding: '10px 12px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                {item.image && (
+                                  <img src={item.image} alt={item.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                                )}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.9)' }}>{item.name}</div>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#FCD34D', background: 'rgba(251,191,36,.12)', borderRadius: 4, padding: '2px 10px' }}>×{item.totalQty}</span>
+                                  </div>
+                                  {item.details.some(d => d.color || d.size) && (
+                                    <div style={{ marginTop: 5, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                      {item.details.map((d, j) => (
+                                        <span key={j} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, background: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.5)', border: '1px solid rgba(255,255,255,.1)' }}>
+                                          {[d.color, d.size].filter(Boolean).join(' · ')} × {d.qty}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
 
                 {expandedCycle === c.id && (
                   <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,.06)', paddingTop: 12 }}>

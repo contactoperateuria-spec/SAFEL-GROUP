@@ -10,6 +10,7 @@ const EMPTY_FORM = {
   name: '', description: '', price_cfa: '', price_cny: '', category: 'Beauté',
   colors: [] as string[], colorInput: '',
   sizes: [] as string[], sizeInput: '',
+  pointures: [] as string[], pointureInput: '',
   stock: '10', is_active: true, is_draft: false, customs_fee_cfa: '0',
 }
 
@@ -56,6 +57,14 @@ export default function AdminProduits() {
 
   const removeSize = (s: string) => setForm(p => ({ ...p, sizes: p.sizes.filter(x => x !== s) }))
 
+  const addPointure = () => {
+    const val = form.pointureInput.trim()
+    if (!val || form.pointures.includes(val)) { setForm(p => ({ ...p, pointureInput: '' })); return }
+    setForm(p => ({ ...p, pointures: [...p.pointures, val], pointureInput: '' }))
+  }
+
+  const removePointure = (pt: string) => setForm(p => ({ ...p, pointures: p.pointures.filter(x => x !== pt) }))
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -86,6 +95,7 @@ export default function AdminProduits() {
       category: form.category,
       colors: form.colors,
       sizes: form.sizes,
+      pointures: form.pointures,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_draft ? false : form.is_active,
       is_draft: form.is_draft,
@@ -124,6 +134,8 @@ export default function AdminProduits() {
       colorInput: '',
       sizes: p.sizes ?? [],
       sizeInput: '',
+      pointures: p.pointures ?? [],
+      pointureInput: '',
       stock: String(p.stock ?? 0),
       is_active: p.is_active ?? true,
       is_draft: p.is_draft ?? false,
@@ -160,6 +172,7 @@ export default function AdminProduits() {
       category: form.category,
       colors: form.colors,
       sizes: form.sizes,
+      pointures: form.pointures,
       stock: parseInt(form.stock) || 0,
       is_active: form.is_active,
       customs_fee_cfa: parseInt(form.customs_fee_cfa) || 0,
@@ -293,6 +306,28 @@ export default function AdminProduits() {
                     style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
                   />
                   <button type="button" onClick={addSize} style={{ background: 'rgba(99,102,241,.2)', border: '1px solid rgba(99,102,241,.4)', color: '#818CF8', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
+                </div>
+              </div>
+            </Field>
+            <Field label="Pointures disponibles">
+              <div style={{ border: '1px solid rgba(255,255,255,.12)', borderRadius: 4, padding: '6px 8px', background: 'rgba(255,255,255,.08)', minHeight: 38 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: form.pointures.length > 0 ? 6 : 0 }}>
+                  {form.pointures.map(pt => (
+                    <span key={pt} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(20,184,166,.18)', border: '1px solid rgba(20,184,166,.4)', color: '#2DD4BF', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                      {pt}
+                      <button type="button" onClick={() => removePointure(pt)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13, lineHeight: 1, padding: 0, opacity: .7 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <input
+                    value={form.pointureInput}
+                    onChange={set('pointureInput')}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addPointure() } }}
+                    placeholder="Ex : 38, 39, 40, 41…"
+                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 12, padding: '2px 0' }}
+                  />
+                  <button type="button" onClick={addPointure} style={{ background: 'rgba(20,184,166,.2)', border: '1px solid rgba(20,184,166,.4)', color: '#2DD4BF', borderRadius: 4, padding: '2px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>+</button>
                 </div>
               </div>
             </Field>
