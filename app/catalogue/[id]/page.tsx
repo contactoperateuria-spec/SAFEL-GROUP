@@ -19,6 +19,7 @@ function ProductPageInner() {
   const [loading, setLoading] = useState(true)
   const [colorQtys, setColorQtys] = useState<Record<string, number>>({})
   const [sizeQtys, setSizeQtys] = useState<Record<string, number>>({})
+  const [pointureQtys, setPointureQtys] = useState<Record<string, number>>({})
   const [activeImg, setActiveImg] = useState(0)
 
   useEffect(() => {
@@ -44,10 +45,14 @@ function ProductPageInner() {
   const images = product.images ?? []
   const colors = product.colors ?? []
   const sizes = product.sizes ?? []
+  const pointures = product.pointures ?? []
 
   const colorTotal = Object.values(colorQtys).reduce((a, b) => a + b, 0)
   const sizeTotal = Object.values(sizeQtys).reduce((a, b) => a + b, 0)
-  const totalQty = colors.length > 0 ? colorTotal : (sizes.length > 0 ? sizeTotal : (colorQtys._ ?? 1))
+  const pointureTotal = Object.values(pointureQtys).reduce((a, b) => a + b, 0)
+  const totalQty = colors.length > 0
+    ? (pointures.length > 0 ? colorTotal + pointureTotal : colorTotal)
+    : (pointures.length > 0 ? pointureTotal : (sizes.length > 0 ? sizeTotal : (colorQtys._ ?? 1)))
   const totalPrice = totalQty * product.price_cfa
   const meetsMin = totalQty >= 1
 
@@ -63,22 +68,34 @@ function ProductPageInner() {
   const setSizeQty = (size: string, val: string) =>
     setSizeQtys(prev => ({ ...prev, [size]: Math.max(0, Math.min(parseInt(val) || 0, 9999)) }))
 
+  const changePointureQty = (pt: string, delta: number) =>
+    setPointureQtys(prev => ({ ...prev, [pt]: Math.max(0, Math.min((prev[pt] ?? 0) + delta, 9999)) }))
+
+  const setPointureQty = (pt: string, val: string) =>
+    setPointureQtys(prev => ({ ...prev, [pt]: Math.max(0, Math.min(parseInt(val) || 0, 9999)) }))
+
   const colorSelections = colors.filter(c => (colorQtys[c] ?? 0) > 0)
   const sizeSelections = sizes.filter(s => (sizeQtys[s] ?? 0) > 0)
+  const pointureSelections = pointures.filter(p => (pointureQtys[p] ?? 0) > 0)
 
   const handleAddToCart = () => {
     const base = { product_id: product.id, name: product.name, emoji: meta.emoji, bg: meta.bg, image: images[0] ?? undefined, price: product.price_cfa }
     if (colors.length > 0) {
-      // une ligne par couleur, taille unique si applicable
       Object.entries(colorQtys).filter(([, q]) => q > 0).forEach(([color, qty]) => {
         addItem({ ...base, quantity: qty, color })
       })
-    } else if (sizes.length > 0) {
-      // une ligne par taille
+    }
+    if (pointures.length > 0) {
+      Object.entries(pointureQtys).filter(([, q]) => q > 0).forEach(([pt, qty]) => {
+        addItem({ ...base, quantity: qty, size: pt })
+      })
+    }
+    if (colors.length === 0 && pointures.length === 0 && sizes.length > 0) {
       Object.entries(sizeQtys).filter(([, q]) => q > 0).forEach(([size, qty]) => {
         addItem({ ...base, quantity: qty, size })
       })
-    } else {
+    }
+    if (colors.length === 0 && pointures.length === 0 && sizes.length === 0) {
       addItem({ ...base, quantity: colorQtys._ ?? 1 })
     }
     router.push('/panier')
@@ -147,8 +164,21 @@ function ProductPageInner() {
             </>
           )}
 
-          {/* Tailles & quantités (si pas de couleurs) */}
-          {sizes.length > 0 && colors.length === 0 && (
+          {/* Pointures & quantités */}
+          {pointures.length > 0 && (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8, marginTop: colors.length > 0 ? 12 : 0 }}>
+                Pointures & quantités <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— choisissez votre pointure</span>
+              </div>
+              <QtyTable rows={pointures} qtys={pointureQtys} onChange={setPointureQty} onDelta={changePointureQty} />
+              {pointureSelections.length > 0 && (
+                <SelectionSummary entries={pointureSelections.map(p => ({ label: `Pointure ${p}`, qty: pointureQtys[p] }))} total={pointureTotal} price={pointureTotal * product.price_cfa} />
+              )}
+            </>
+          )}
+
+          {/* Tailles & quantités (si pas de couleurs ni pointures) */}
+          {sizes.length > 0 && colors.length === 0 && pointures.length === 0 && (
             <>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>
                 Tailles & quantités <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>— choisissez plusieurs tailles</span>
@@ -160,8 +190,8 @@ function ProductPageInner() {
             </>
           )}
 
-          {/* Pas de couleur ni taille — quantité simple */}
-          {colors.length === 0 && sizes.length === 0 && (
+          {/* Pas de couleur ni taille ni pointure — quantité simple */}
+          {colors.length === 0 && sizes.length === 0 && pointures.length === 0 && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Quantité</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
