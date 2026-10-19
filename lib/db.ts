@@ -1,10 +1,13 @@
 import { supabase, supabaseAdmin } from './supabase'
 import type { Product, Cycle, Order } from './types'
 
+const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 heures
+let productsCache: { data: Product[]; ts: number } | null = null
+
 export async function getActiveCycle(): Promise<Cycle | null> {
   const { data } = await supabase
     .from('cycles')
-    .select('*')
+    .select('id, name, status, closed_at, expected_arrival')
     .eq('status', 'open')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -13,9 +16,15 @@ export async function getActiveCycle(): Promise<Cycle | null> {
 }
 
 export async function getProducts(filters?: { category?: string; search?: string }): Promise<Product[]> {
+  if (!filters?.category && !filters?.search) {
+    if (productsCache && Date.now() - productsCache.ts < CACHE_TTL) {
+      return productsCache.data
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase.from('products') as any)
-    .select('*')
+    .select('id, name, price_cfa, images, category, stock')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
@@ -23,7 +32,13 @@ export async function getProducts(filters?: { category?: string; search?: string
   if (filters?.search) query = query.ilike('name', `%${filters.search}%`)
 
   const { data } = await query
-  return data ?? []
+  const result = data ?? []
+
+  if (!filters?.category && !filters?.search) {
+    productsCache = { data: result, ts: Date.now() }
+  }
+
+  return result
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
@@ -158,6 +173,7 @@ export async function adminCreateProduct(product: {
     .select()
     .single()
   if (error) { console.error('adminCreateProduct:', error.message); return null }
+  productsCache = null
   return data
 }
 
@@ -166,6 +182,7 @@ export async function adminUpdateProduct(id: string, updates: Partial<Product>):
   const { error } = await (supabaseAdmin.from('products') as any)
     .update(updates)
     .eq('id', id)
+  if (!error) productsCache = null
   return !error
 }
 
@@ -297,6 +314,7 @@ export async function adminDeleteOrder(id: string): Promise<boolean> {
 export async function adminDeleteProduct(id: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabaseAdmin.from('products') as any).delete().eq('id', id)
+  if (!error) productsCache = null
   return !error
 }
 

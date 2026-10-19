@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import CycleBanner from '@/components/CycleBanner'
 import NouveautesSection from '@/components/NouveautesSection'
+import HeroProduits from '@/components/HeroProduits'
 
 const CATEGORIES = [
   { emoji: '🧴', name: 'Beauté' },
@@ -67,22 +68,7 @@ export default function HomePage() {
 
             {/* Visual preview */}
             <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-lg)', padding: 24, border: '1px solid var(--border)' }}>
-              {[
-                { emoji: '🧴', bg: '#FFF0E6', name: 'Sérum Vitamine C 30ml', cat: 'Beauté · Soins visage', price: '4 500 FCFA', moq: 'min. 2 pcs' },
-                { emoji: '🎧', bg: '#E8F0FE', name: 'Écouteurs Bluetooth Pro', cat: 'Électronique', price: '18 000 FCFA', moq: 'min. 1 pc' },
-              ].map(p => (
-                <div key={p.name} style={{ background: 'var(--white)', borderRadius: 'var(--radius)', padding: 14, display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10, border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                  <div style={{ width: 60, height: 60, borderRadius: 8, background: p.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>{p.emoji}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>{p.cat}</div>
-                    <div>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--orange)' }}>{p.price}</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 6 }}>{p.moq}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <HeroProduits />
               <div style={{ background: 'var(--white)', borderRadius: 8, padding: 12, border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-2)', marginBottom: 6 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />
