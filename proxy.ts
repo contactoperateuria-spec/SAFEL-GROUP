@@ -19,8 +19,18 @@ async function isValidSubadminToken(token: string): Promise<boolean> {
   } catch { return false }
 }
 
+const MAINTENANCE = true
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (MAINTENANCE) {
+    if (pathname.startsWith('/maintenance') || pathname.startsWith('/api/') || pathname.startsWith('/_next')) {
+      return NextResponse.next()
+    }
+    return NextResponse.redirect(new URL('/maintenance', request.url))
+  }
+
   if (!pathname.startsWith('/admin')) return NextResponse.next()
   if (pathname === '/admin/login') return NextResponse.next()
   if (pathname.startsWith('/api/admin/auth')) return NextResponse.next()
@@ -37,5 +47,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin', '/admin/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
