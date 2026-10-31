@@ -19,7 +19,7 @@ async function isValidSubadminToken(token: string): Promise<boolean> {
   } catch { return false }
 }
 
-const MAINTENANCE = true
+const MAINTENANCE = false
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
