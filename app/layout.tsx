@@ -8,7 +8,7 @@ import WaFab from '@/components/WaFab'
 const inter = Inter({ subsets: ['latin'] })
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: 1100,
   initialScale: 1,
 }
 
