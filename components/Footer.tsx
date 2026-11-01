@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer style={{ background: '#1A1A1A', color: 'rgba(255,255,255,.75)', padding: '48px 0 24px' }}>
       <div className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 32, marginBottom: 32 }}>
+        <div className="footer-grid">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <div style={{ width: 36, height: 36, background: 'var(--orange)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14 }}>SG</div>

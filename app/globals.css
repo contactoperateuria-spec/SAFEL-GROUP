@@ -237,6 +237,16 @@ ul { list-style: none; }
 }
 
 /* FOOTER */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+@media (max-width: 700px) {
+  .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+}
+
 .footer-links li { margin-bottom: 8px; }
 .footer-links a { font-size: 13px; color: rgba(255,255,255,.6); transition: color .15s; }
 .footer-links a:hover { color: var(--orange); }
